@@ -83,8 +83,9 @@ def method1():
     clip_polyhedron(vertices,[0.5,0,0],[1,0,0])
     clip_polyhedron(vertices,[0,0.5,0],[0,1,0])
     clip_polyhedron(vertices,[0,0,0.5],[0,0,1])
+
     hull = ConvexHull(vertices)
-    v = hull.volume
+    return vertices, hull.volume
 
 def method2():
 
@@ -101,9 +102,13 @@ def method2():
     clip_polyhedron2(vertices,edges,[0,0,0.5],[0,0,1])
 
     hull = ConvexHull(vertices)
-    v = hull.volume
+    return vertices, hull.volume
 
 
 if __name__ == '__main__':
-    print(timeit.timeit("method1()", setup="from __main__ import method1", number=10000))
-    print(timeit.timeit("method2()", setup="from __main__ import method2", number=10000))
+    print(timeit.timeit("method1()", setup="from __main__ import method1", number=1000))
+    print(timeit.timeit("method2()", setup="from __main__ import method2", number=1000))
+
+    vertices, volume = method2()
+    print np.array(vertices)
+    plot_polyhedron(vertices)
