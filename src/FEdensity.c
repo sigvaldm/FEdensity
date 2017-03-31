@@ -5,3 +5,5 @@
  *
  * The implementation for the FEdensity library.
  */
+
+#include "FEdensity.h"

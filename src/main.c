@@ -7,8 +7,9 @@
  */
 
 #include <stdio.h>
+#include "FEdensity.h"
 
 int main(){
-    printf("Hei");
+    printf("FEdensity %s\n",VERSION);
     return 0;
 }

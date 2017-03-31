@@ -5,3 +5,9 @@
  *
  * The interface for the FEdensity library.
  */
+
+#ifndef FEDENSITY_H
+#define FEDENSITY_H
+#include "version.h"
+
+#endif // FEDENSITY_H
