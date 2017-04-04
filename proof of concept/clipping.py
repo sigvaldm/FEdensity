@@ -14,6 +14,8 @@ def plot_polyhedron(vertices):
     ax.add_collection3d(tri)
     plt.show()
 
+# Naïve. Tests all pairs of vertices as edges, which produces 14 vertices,
+# 7 of which is not actually vertices but points inside the same convex hull.
 def clip_polyhedron(vertices, p, n):
     edges = list(combinations(vertices, 2))
     for edge in edges:
@@ -35,6 +37,10 @@ def clip_polyhedron(vertices, p, n):
         if np.dot(v-p,n)>epsilon:
             vertices.pop(i)
 
+# Keeps track of edges and only cuts previous edges. Does not keep track of
+# faces. Vertices produced are 8 (7 of which are actually vertices).
+# Computational time halved compared with clip_polyhedron(). Since it does not
+# keep track of faces convex hull algorithm must be used to compute volume.
 def clip_polyhedron2(vertices, edges, p, n):
     delete_vertices = set()
     old_vertices = len(vertices)
