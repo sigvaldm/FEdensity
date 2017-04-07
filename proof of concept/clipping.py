@@ -14,7 +14,7 @@ def plot_polyhedron(vertices):
     ax.add_collection3d(tri)
     plt.show()
 
-# Naïve. Tests all pairs of vertices as edges, which produces 14 vertices,
+# Naive. Tests all pairs of vertices as edges, which produces 14 vertices,
 # 7 of which is not actually vertices but points inside the same convex hull.
 def clip_polyhedron(vertices, p, n):
     edges = list(combinations(vertices, 2))

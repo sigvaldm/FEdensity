@@ -3,3 +3,4 @@ fedensity
 doc/html
 doc/latex
 **.o
+**.pyc

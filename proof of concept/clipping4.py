@@ -6,6 +6,7 @@ from scipy.spatial import ConvexHull
 from itertools import combinations, count
 import timeit
 import copy
+import time
 
 epsilon = 1e-10
 
@@ -88,14 +89,12 @@ def extract_face_vertices(face):
     edge = face[0]
     vertex = edge[0]
     first_vertex = vertex
-    i = 0
-    while True and i<10:
+    while True:
         face_vertices.append(vertex)
         edge = find_other_edge(face, edge, vertex)
         vertex = find_other_vertex(edge, vertex)
         if vertex is first_vertex:
             return face_vertices
-        i += 1
 
 def flatten(inp):
     output = []
@@ -214,38 +213,84 @@ class Polyhedron(object):
         volume *= (1.0/6)
         return volume
 
+def method3():
 
-vertices = [np.array([0,0,0]),
-            np.array([1,0,0]),
-            np.array([0,1,0]),
-            np.array([0,0,1])]
+    vertices = [np.array([0,0,0]),
+                np.array([1,0,0]),
+                np.array([0,1,0]),
+                np.array([0,0,1])]
 
-# p = Polyhedron(*vertices)
-# p.clip([0.5,0,0],[1,0,0])
-# # p.clip([0.3,0,0],[1,0,0])
-# # p.clip([0.1,0,0],[1,0,0])
-# # p.clip([0,0.3,0],[0,1,0])
-# p.clip([0,0.5,0],[0,1,0])
-# p.clip([0,0,0.5],[0,0,1])
-# # p.clip([0,0.4,0.4],[0,1,1])
-# print(p.volume())
-# p.plot()
+    p = Polyhedron(*vertices)
 
-vertices = [np.array([-1,-1,-1]),
-            np.array([8,-1,-1]),
-            np.array([-1,8,-1]),
-            np.array([-1,-1,8])]
+    p.clip([0.5,0,0],[1,0,0])
+    p.clip([0,0.5,0],[0,1,0])
+    p.clip([0,0,0.5],[0,0,1])
 
-p = Polyhedron(*vertices)
-p.clip([1,0,0],[1,0,0])
-p.clip([0,1,0],[0,1,0])
-p.clip([0,0,1],[0,0,1])
+    return p.volume()
 
-for theta in range(0,330,30):
-    theta_rad = float(theta) * np.pi / 180
-    x = np.cos(theta_rad)
-    y = np.sin(theta_rad)
-    print(x,y)
-    p.clip([x,y,0],[x,y,0])
-print(p.volume())
-# p.plot()
+if __name__ == '__main__':
+
+
+
+    vertices = [np.array([0,0,0]),
+                np.array([1,0,0]),
+                np.array([0,1,0]),
+                np.array([0,0,1])]
+
+    # p = Polyhedron(*vertices)
+    # p.clip([0.5,0,0],[1,0,0])
+    # # p.clip([0.3,0,0],[1,0,0])
+    # # p.clip([0.1,0,0],[1,0,0])
+    # # p.clip([0,0.3,0],[0,1,0])
+    # p.clip([0,0.5,0],[0,1,0])
+    # p.clip([0,0,0.5],[0,0,1])
+    # # p.clip([0,0.4,0.4],[0,1,1])
+    # print(p.volume())
+    # p.plot()
+
+    vertices = [np.array([-2,-2,-2]),
+                np.array([8,-2,-2]),
+                np.array([-2,8,-2]),
+                np.array([-2,-2,8])]
+
+    p = Polyhedron(*vertices)
+    p.clip([1,0,0],[1,0,0])
+    p.clip([0,1,0],[0,1,0])
+    p.clip([0,0,1],[0,0,1])
+
+    for theta in range(0,360,1):
+        theta_rad = float(theta) * np.pi / 180
+        x = np.cos(theta_rad)
+        y = np.sin(theta_rad)
+        p.clip([x,y,0],[x,y,-0.5])
+        p.clip([x,y,0],[x,y,1])
+    p.clip([0,0,0.3],[0,0,1])
+    print(p.volume())
+    p.plot()
+
+
+    vertices = [np.array([-1,-1,-1]),
+                np.array([8,-1,-1]),
+                np.array([-1,8,-1]),
+                np.array([-1,-1,8])]
+
+    p = Polyhedron(*vertices)
+    p.clip([1,0,0],[1,0,0])
+    p.clip([0,1,0],[0,1,0])
+    p.clip([0,0,1],[0,0,1])
+
+    t0 = time.time()
+    for theta in range(0,360):
+        theta_rad = float(theta) * np.pi / 180
+        x = np.cos(theta_rad)
+        y = np.sin(theta_rad)
+        p.clip([x,y,0],[x,y,0])
+    p.clip([0,0,0.3],[0,0,1])
+    t1 = time.time()
+    print("Cutting:",t1-t0)
+    t0 = time.time()
+    volume = p.volume()
+    t1 = time.time()
+    print("Volume:",t1-t0)
+    print(volume)
+    p.plot()
