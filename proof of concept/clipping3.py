@@ -1,9 +1,11 @@
+from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d as a3
 from scipy.spatial import ConvexHull
 from itertools import combinations
 import timeit
+import copy
 
 epsilon = 1e-10
 
@@ -117,36 +119,165 @@ class Polyhedron(object):
                 return i
 
     def clip(self, p, n):
-        anchor_edge_id = self.find_intersecting_edge(p, n)
-        face_id = self.edge_faces[anchor_edge_id][0]
-        updated_face = []
-        new_edge = []
-        for edge_id in self.faces[face_id]:
-            edge = self.edges[edge_id]
-            edge_vertices = [self.vertices[i] for i in edge]
-            new_vertex = plane_line_intersection(edge_vertices, p, n)
-            if new_vertex is None:
-                if is_behind_plane(edge_vertices[0], p, n):
-                    updated_face.append(edge_id)
+        first_anchor_edge_id = self.find_intersecting_edge(p, n)
+        anchor_edge_id = first_anchor_edge_id
+        while True:
+            face_id = self.edge_faces[anchor_edge_id][0]
+            updated_face = []
+            new_edge = []
+
+            for edge_id in self.faces[face_id]:
+                edge = self.edges[edge_id]
+                edge_vertices = [self.vertices[i] for i in edge]
+                new_vertex = plane_line_intersection(edge_vertices, p, n)
+                if new_vertex is None:
+                    if is_behind_plane(edge_vertices[0], p, n):
+                        updated_face.append(edge_id)
+                    else:
+                        edge_faces.remove(face_id)
                 else:
-                    edge_faces.remove(face_id)
-            else:
-                self.vertices.append(new_vertex)
-                new_vertex_id = len(self.vertices)-1
-                if is_behind_plane(edge_vertices[0], p, n):
-                    self.edges.append([edge[0],new_vertex_id])
-                else:
-                    self.edges.append([edge[1],new_vertex_id])
+                    self.vertices.append(new_vertex)
+                    new_vertex_id = len(self.vertices)-1
+                    if is_behind_plane(edge_vertices[0], p, n):
+                        self.edges.append([edge[0],new_vertex_id])
+                    else:
+                        self.edges.append([edge[1],new_vertex_id])
+                    self.edge_faces.append([face_id])
+                    self.edge_faces[edge_id].remove(face_id)
+                    updated_face.append(len(self.edges)-1)
+                    new_edge.append(new_vertex_id)
+                    if edge_id != anchor_edge_id:
+                        next_anchor_edge_id = edge_id
+            if new_edge != []:
+                self.edges.append(new_edge)
                 self.edge_faces.append([face_id])
-                self.edge_faces[edge_id].remove(face_id)
                 updated_face.append(len(self.edges)-1)
-                new_edge.append(new_vertex_id)
-        if new_edge != []:
-            self.edges.append(new_edge)
-            self.edge_faces.append([face_id])
-            updated_face.append(len(self.edges)-1)
+                self.faces[face_id] = updated_face
+
+            anchor_edge_id = next_anchor_edge_id
+            if anchor_edge_id == first_anchor_edge_id:
+                break
+
+    def intersect_edge(self, edge_id, p, n):
+        """
+        Given the index of an edge "edge_id" and a pair (p,n) describing the
+        plane, intersects this edge by the plane and creates a new edge if
+        necessary. Returns the id of the intersected edge in the self.edges
+        list, or None if the whole edge is to be cut away. Note: The old edge
+        stile exists in the list.
+        """
+        edge = self.edges[edge_id]
+        edge_vertices = [self.vertices[i] for i in edge]
+        new_vertex = plane_line_intersection(edge_vertices, p, n)
+        if new_vertex is None:
+            if is_behind_plane(edge_vertices[0], p, n):
+                return edge_id, None
+            else:
+                return None, None
+        else:
+            self.vertices.append(new_vertex)
+            new_vertex_id = len(self.vertices)-1
+            if is_behind_plane(edge_vertices[0], p, n):
+                self.edges.append([edge[0],new_vertex_id])
+            else:
+                self.edges.append([edge[1],new_vertex_id])
+            self.edge_faces.append([])
+            new_edge_id = len(self.edges)-1
+            return new_edge_id, new_vertex_id
+
+    def clip2(self, p, n):
+        first_anchor_edge_id = self.find_intersecting_edge(p, n)
+        anchor_edge_id = first_anchor_edge_id
+
+        while True:
+            face_id = self.edge_faces[anchor_edge_id][0]
+            updated_face = []
+            new_edge = []
+
+            for edge_id in self.faces[face_id]:
+                edge = self.edges[edge_id]
+                edge_vertices = [self.vertices[i] for i in edge]
+
+                new_edge_id, new_vertex_id = self.intersect_edge(edge_id, p, n)
+
+                if new_vertex_id:
+                    new_edge.append(new_vertex_id)
+
+                self.edge_faces[edge_id].remove(face_id)
+
+                if new_edge_id:
+                    updated_face.append(new_edge_id)
+                    self.edge_faces[new_edge_id].append(face_id)
+
+                if edge_id != anchor_edge_id:
+                    next_anchor_edge_id = edge_id
+
+            if new_edge != []:
+                self.edges.append(new_edge)
+                self.edge_faces.append([face_id])
+                updated_face.append(len(self.edges)-1)
+
             self.faces[face_id] = updated_face
 
+            # print("vertices:")
+            # print(np.array(self.vertices))
+
+            print(self)
+
+            anchor_edge_id = next_anchor_edge_id
+            if anchor_edge_id == first_anchor_edge_id:
+                break
+
+    def replace_face_edge(self, face_id, edge_id, new_edge_id):
+
+        self.faces[face_id].remove(edge_id)
+        self.edge_faces[edge_id].remove(face_id)
+
+        if new_edge_id is not None:
+            self.faces[face_id].append(new_edge_id)
+            self.edge_faces[new_edge_id].append(face_id)
+
+    def clip3(self, p, n):
+        first_anchor_edge_id = self.find_intersecting_edge(p, n)
+        anchor_edge_id = first_anchor_edge_id
+
+        replacement_anchor_edge_id, asdf = self.intersect_edge(anchor_edge_id, p, n)
+
+        while True:
+            face_id = self.edge_faces[anchor_edge_id][0]
+            face = self.faces[face_id]
+
+            face_ = copy.deepcopy(face)
+            self.replace_face_edge(face_id, anchor_edge_id, replacement_anchor_edge_id)
+
+            for edge_id in face_:
+                if edge_id != anchor_edge_id:
+                    new_edge_id, new_vertex_id = self.intersect_edge(edge_id, p, n)
+                    self.replace_face_edge(face_id, edge_id, new_edge_id)
+                    if new_vertex_id:
+                        next_anchor_edge_id = edge_id
+                        replacement_anchor_edge_id = new_edge_id
+
+    # Don't use. I think it has bad consequences
+    def replace_edge(self, edge_id, new_edge_id):
+        if edge_id != new_edge_id:
+            for face_id in self.edge_faces[edge_id]:
+                self.faces[face_id].remove(edge_id)
+
+            if new_edge_id is not None:
+                for face_id in self.edge_faces[edge_id]:
+                    self.faces[face_id].append(new_edge_id)
+                    self.edge_faces[new_edge_id].append(face_id)
+
+            self.edge_faces[edge_id] = []
+
+    def clip4(self, p, n):
+        # 1. Anchor edge = some intersecting edge
+        # 2. Face = a face of anchor edge
+        # 3. Cut anchor edge & update face
+        # 4. For all edge = non-anchor-edges in face:
+        #       a. New edge = this
+        #       b. If new vertex: next anchor edge = this edge
 
 vertices = [np.array([0,0,0]),
             np.array([1,0,0]),
@@ -154,5 +285,5 @@ vertices = [np.array([0,0,0]),
             np.array([0,0,1])]
 
 p = Polyhedron(*vertices)
-p.clip([0.5,0,1],[1,0,0])
-print p
+# p.clip3([0.5,0,1],[1,0,0])
+print(p)
