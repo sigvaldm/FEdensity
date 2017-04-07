@@ -62,7 +62,7 @@ def vertices_equal(a, b, tol=epsilon):
     # sometimes used differently.
     return np.linalg.norm(a-b)<epsilon
 
-def vertex_in_edge(vertex, edge, tol=epsilon):
+def vertex_in_list(vertex, edge, tol=epsilon):
     return np.any([vertices_equal(a,vertex) for a in edge])
 
 def find_other_edge(face, edge, vertex):
@@ -71,7 +71,7 @@ def find_other_edge(face, edge, vertex):
     """
     for other_edge in face:
         if other_edge is not edge:
-            if vertex_in_edge(vertex, other_edge):
+            if vertex_in_list(vertex, other_edge):
                 return other_edge
 
 def find_other_vertex(edge, vertex):
@@ -196,17 +196,56 @@ class Polyhedron(object):
 
         assert self.vertices_are_unique()
 
+    def volume(self):
+        if len(self.faces)==0: return 0.0
+
+        volume = 0.0
+        a = self.faces[0][0][0]
+        for face in self.faces:
+            face_vertices = extract_face_vertices(face)
+            if not vertex_in_list(a,face_vertices):
+                b = face_vertices[0]
+                for i in range(1,len(face_vertices)-1):
+                    c = face_vertices[i]
+                    d = face_vertices[i+1]
+                    cross = np.cross(b-d,c-d)
+                    dot = np.dot(a-d,cross)
+                    volume += abs(dot)
+        volume *= (1.0/6)
+        return volume
+
+
 vertices = [np.array([0,0,0]),
             np.array([1,0,0]),
             np.array([0,1,0]),
             np.array([0,0,1])]
 
+# p = Polyhedron(*vertices)
+# p.clip([0.5,0,0],[1,0,0])
+# # p.clip([0.3,0,0],[1,0,0])
+# # p.clip([0.1,0,0],[1,0,0])
+# # p.clip([0,0.3,0],[0,1,0])
+# p.clip([0,0.5,0],[0,1,0])
+# p.clip([0,0,0.5],[0,0,1])
+# # p.clip([0,0.4,0.4],[0,1,1])
+# print(p.volume())
+# p.plot()
+
+vertices = [np.array([-1,-1,-1]),
+            np.array([8,-1,-1]),
+            np.array([-1,8,-1]),
+            np.array([-1,-1,8])]
+
 p = Polyhedron(*vertices)
-p.clip([0.5,0,0],[1,0,0])
-p.clip([0.3,0,0],[1,0,0])
-p.clip([0.1,0,0],[1,0,0])
-p.clip([0,0.3,0],[0,1,0])
-p.clip([0,0.5,0],[0,1,0])
-p.clip([0,0,0.5],[0,0,1])
-p.clip([0,0.4,0.4],[0,1,1])
-p.plot()
+p.clip([1,0,0],[1,0,0])
+p.clip([0,1,0],[0,1,0])
+p.clip([0,0,1],[0,0,1])
+
+for theta in range(0,330,30):
+    theta_rad = float(theta) * np.pi / 180
+    x = np.cos(theta_rad)
+    y = np.sin(theta_rad)
+    print(x,y)
+    p.clip([x,y,0],[x,y,0])
+print(p.volume())
+# p.plot()
