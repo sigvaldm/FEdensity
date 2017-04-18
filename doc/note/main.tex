@@ -1,0 +1,95 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage[linesnumbered,ruled,vlined]{algorithm2e}
+%\usepackage[noend]{algpseudocode}
+
+\title{An algorithm for densities in FEM simulations}
+\author{Sigvald Marholm}
+
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\n}[1]{\bar{#1}}
+\newcommand{\nd}[1]{\tilde{#1}}
+\newcommand{\refeq}[1]{(\ref{eq:#1})}
+\newcommand{\reffig}[1]{Fig.~\ref{fig:#1}}
+\newcommand{\reftab}[1]{Tab.~\ref{tab:#1}}
+\newcommand{\const}{\mathrm{const}}
+\newcommand{\cd}{\texttt}
+\renewcommand{\vec}{\mathbf}
+
+\makeatletter
+\newcommand{\nosemic}{\renewcommand{\@endalgocfline}{\relax}}% Drop semi-colon ;
+\newcommand{\dosemic}{\renewcommand{\@endalgocfline}{\algocf@endline}}% Reinstate semi-colon ;
+\newcommand{\pushline}{\Indp}% Indent
+\newcommand{\popline}{\Indm\dosemic}% Undent
+\makeatother
+\nosemic
+
+
+\begin{document}
+
+\maketitle
+\pagebreak
+
+\section{Intersection between plane and line}
+Let's find the intersection point $\vec v_n$ of a line between the points $\vec v_1$ and $\vec v_2$ and a plane. The plane is described by the pair $(\vec p,\vec n)$ where $\vec p$ is a point in the plane and $\vec n$ is a normal vector of the plane. That $\vec v_n$ is both on the line between $\vec v_1$ and $\vec v_2$ and in the plane is expressed as:
+
+\begin{align}
+	(\vec v_n-p)\cdot\vec n=0 \\
+	\vec v_n=\vec v_1+\alpha(\vec v_2-\vec v_1)
+\end{align}
+eliminating $\vec v_n$ and solving for $\alpha$ yields:
+\begin{align}
+	\alpha=\frac{(\vec v_2-\vec v_1)\cdot\vec n}{(\vec p-\vec v_1)\cdot\vec n}
+\end{align}
+which when back-substituted yields $\vec v_n$. That the denominator of $\alpha$ is non-zero and that $\alpha\in[0,1]$ can be used as a check that the line does in fact intersect the plane, however, as we will see, that's an insufficient check due to corner cases.
+
+\section{Volume of polyhedron}
+An algorithm for computing the volume of an arbitrary convex polyhedron is as follows:
+\begin{enumerate}
+	\item Choose an arbitrary vertex $\vec a$ and start with a volume of zero.
+	\item Split the polyhedron in to several polyhedrons consisting of the point $\vec a$ and a face $f$ not containing $\vec a$. For each of them:
+	\begin{enumerate}
+		\item Let the vertices in face $f$ be $\{\vec v_0, \vec v_1,...,\vec v_n\}$. Split the face into triangles as follows: Let $\vec b=\vec v_0$. Let $(\vec c,\vec d)=(\vec v_p,\vec v_{p+1})$ for $p=1,...,n-1$ such that $\vec a$, $\vec b$, $\vec c$ and $\vec d$ form the vertices of a tetrahedron.
+			\begin{enumerate}
+				\item For each tetrahedron, compute the volume as follows and add to the total volume:
+				\begin{equation}
+					V = \frac{|(\vec a-\vec d)\cdot((\vec b-\vec d)\times(\vec c-\vec d))|}{6}
+				\end{equation}
+			\end{enumerate}
+	\end{enumerate}
+\end{enumerate}
+
+\section{Finding the circumcenter of a cell}
+To find the circumcenter of a cell, we first describe the planes which are perpendicular to the middle of the edges by a point $\vec p$ in that plane and a normal vector $\vec n$. E.g. if $\vec v_1$, $\vec v_2$ and $\vec v_3$ are the vertices of a triangular cell (3D is a trivial extension) the normal planes are described by:
+
+\begin{align}
+	\vec n_1 &= \vec v_2 - \vec v_1 \\
+	\vec n_2 &= \vec v_3 - \vec v_1 \\
+	\vec p_1 &= 0.5(\vec v_1 + \vec v_2) \\
+	\vec p_2 &= 0.5(\vec v_1 + \vec v_3)
+\end{align}
+The circumcenter $\vec c$ lies in both of these planes (or all of them in higher dimensions). Thus we must solve the equations:
+
+\begin{align}
+	(\vec c-\vec p_1)\cdot \vec n_1 &= 0 \\
+	(\vec c-\vec p_2)\cdot \vec n_2 &= 0
+\end{align}
+or equivalently:
+\begin{align}
+	\begin{bmatrix}
+		\vec n_1^T \\
+		\vec n_2^T
+	\end{bmatrix} \vec c =
+	\begin{bmatrix}
+		\vec p_1\cdot\vec n_1 \\
+		\vec p_2\cdot\vec n_2
+	\end{bmatrix}
+\end{align}
+Once $\vec c$ is determined one can check on which side of a facet it is by taking $(\vec c-\vec p)\cdot\vec n$ for some pair $(\vec p,\vec n)$ describing that facet. If the result is positive it is in the side towards which $\vec n$ points. The circumcenter appears outside of the cell if one angle is greater than 90 degrees. If the circumcenter is within its own cell for all cells in a mesh that mesh is said to be Pitteway.
+
+\end{document}

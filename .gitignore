@@ -4,3 +4,7 @@ doc/html
 doc/latex
 **.o
 **.pyc
+**.aux
+**.log
+**.synctex.gz
+doc/note/main.pdf
