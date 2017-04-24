@@ -8,3 +8,4 @@ doc/latex
 **.log
 **.synctex.gz
 doc/note/main.pdf
+src/version.h

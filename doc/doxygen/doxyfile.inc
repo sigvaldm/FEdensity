@@ -1,2 +1,2 @@
 INPUT = ../../src ../../src ../../ ../../ ../../doc/doxygen
-FILE_PATTERNS = FEdensity.h FEdensity.c main.dox test.h test.c
+FILE_PATTERNS = polyhedron.h FEdensity.h polyhedron.cpp main.dox test.h test.c

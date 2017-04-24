@@ -116,6 +116,8 @@ class Polyhedron(object):
         edges = list(combinations(vertices,2))
         edges = [list(a) for a in edges]
 
+        # print(np.array(edges))
+
         self.faces = []
         self.faces.append([3,4,5])
         self.faces.append([1,2,5])
@@ -237,7 +239,7 @@ if __name__ == '__main__':
                 np.array([0,1,0]),
                 np.array([0,0,1])]
 
-    # p = Polyhedron(*vertices)
+    p2 = Polyhedron(*vertices)
     # p.clip([0.5,0,0],[1,0,0])
     # # p.clip([0.3,0,0],[1,0,0])
     # # p.clip([0.1,0,0],[1,0,0])

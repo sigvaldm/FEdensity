@@ -4,21 +4,21 @@
 ## @author		Sigvald Marholm <sigvaldm@fys.uio.no>
 ##
 
-CC		= gcc
+CC		= g++
 COPT	= -O3
 
 EXEC = fedensity
 
-CFLAGS = -std=c11 -Wall
+CFLAGS = -std=c++14 -Wall
 
 SDIR	= src
 ODIR	= src/obj
 HDIR	= src
 DDIR	= doc
 
-HEAD_	= FEdensity.h
-SRC_	= FEdensity.c
-OBJ_	= $(SRC_:.c=.o)
+HEAD_	= polyhedron.h FEdensity.h
+SRC_	= polyhedron.cpp
+OBJ_	= $(SRC_:.cpp=.o)
 DOC_	= main.dox
 
 HEAD	= $(patsubst %,$(HDIR)/%,$(HEAD_))
@@ -32,7 +32,7 @@ $(EXEC): $(ODIR)/main.o $(OBJ)
 	@$(CC) $^ -o $@ $(CFLAGS)
 	@echo "FEdensity is built"
 
-$(ODIR)/%.o: $(SDIR)/%.c $(HEAD)
+$(ODIR)/%.o: $(SDIR)/%.cpp $(HEAD)
 	@echo "Compiling $<"
 	@mkdir -p $(ODIR)
 	@$(CC) -c $< -o $@ $(CFLAGS)
