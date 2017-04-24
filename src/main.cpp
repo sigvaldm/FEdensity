@@ -4,8 +4,9 @@
  * @author		Sigvald Marholm <sigvaldm@fys.uio.no>,
  *
  * Copyright 2017 Sigvald Marholm <marholm@marebakken.com>
- *
- * This file is part of FEdensity.
+ */
+
+/* This file is part of FEdensity.
  *
  * FEdensity is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -25,6 +26,7 @@
 #include <cmath>
 #include "FEdensity.h"
 #include "polyhedron.h"
+#include <list>
 using std::cout;
 
 Vertex v1 = {1,2,3};
@@ -35,15 +37,15 @@ Face face = {edge,edge};
 int main(){
     cout << "FEdensity " << VERSION << " running.\n";
 
-    Polyhedron p;
-    // p.tetrahedron({{0,0,0},{1,0,0},{0,1,0},{0,0,1}});
-    p.cube({0,0,0},{1,1,1});
-    cout << p;
-    // cout << faceVertices(p[0]) << "\n";
-    cout << p.volume() << "\n";
 
-    // auto vertices = faceVertices(p[1]);
-    // cout << vertices << "\n";
+    Polyhedron p;
+    p.tetrahedron({{0,0,0},{1,0,0},{0,1,0},{0,0,1}});
+    // p.cube({0,0,0},{1,1,1});
+    p.clip({0.5,0,0},{0.5,0,0});
+    p.clip({0,0.5,0},{0,0.5,0});
+    p.clip({0,0,0.5},{0,0,0.5});
+    cout << p;
+    cout << p.volume() << "\n";
 
     return 0;
 }

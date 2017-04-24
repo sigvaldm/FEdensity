@@ -4,8 +4,9 @@
  * @author		Sigvald Marholm <sigvaldm@fys.uio.no>,
  *
  * Copyright 2017 Sigvald Marholm <marholm@marebakken.com>
- *
- * This file is part of FEdensity.
+ */
+
+/* This file is part of FEdensity.
  *
  * FEdensity is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software

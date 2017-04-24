@@ -5,7 +5,9 @@
  *
  * Handles representation, cutting and volume computations of arbitrary
  * polyhedrons.
- *
+ */
+
+/*
  * Copyright 2017 Sigvald Marholm <marholm@marebakken.com>
  *
  * This file is part of FEdensity.
@@ -27,8 +29,11 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <cassert>
 #include "polyhedron.h"
 using std::cout;
+
+constexpr double epsilon = 1e-10;
 
 /*
  * These two functions do something very unorthodox for the sake of performance:
@@ -39,8 +44,12 @@ using std::cout;
  */
 Edge otherEdge(const Face& face, const Edge& edge, const Vertex& vertex);
 Vertex otherVertex(const Edge& edge, const Vertex& vertex);
-double dot(const Vertex& a, const Vertex& b);
-Vertex cross(const Vertex& a, const Vertex& b);
+
+double dot(const Vector& a, const Vector& b);
+Vector cross(const Vector& a, const Vector& b);
+Vector operator-(const Vector& lhs, const Vector& rhs);
+Vector operator+(const Vector& lhs, const Vector& rhs);
+Vector operator*(double lhs, const Vector& rhs);
 
 ostream& operator<<(ostream& out, const Vertex& vertex){
 
@@ -154,11 +163,11 @@ void Polyhedron::cube(const Vertex& lower, const Vertex& upper){
     }
 }
 
-double dot(const Vertex& a, const Vertex& b){
+double dot(const Vector& a, const Vector& b){
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
-Vertex cross(const Vertex& a, const Vertex& b){
+Vector cross(const Vector& a, const Vector& b){
     Vertex res;
     res[0] = a[1]*b[2] - a[2]*b[1];
     res[1] = a[2]*b[0] - a[0]*b[2];
@@ -166,7 +175,7 @@ Vertex cross(const Vertex& a, const Vertex& b){
     return res;
 }
 
-Vertex operator-(const Vertex& lhs, const Vertex& rhs){
+Vector operator-(const Vector& lhs, const Vector& rhs){
     Vertex res;
     for(size_t i=0; i<lhs.size(); i++){
          res[i] = lhs[i] - rhs[i];
@@ -174,6 +183,21 @@ Vertex operator-(const Vertex& lhs, const Vertex& rhs){
     return res;
 }
 
+Vector operator+(const Vector& lhs, const Vector& rhs){
+    Vertex res;
+    for(size_t i=0; i<lhs.size(); i++){
+         res[i] = lhs[i] + rhs[i];
+    }
+    return res;
+}
+
+Vector operator*(double lhs, const Vector& rhs){
+    Vertex res;
+    for(size_t i=0; i<rhs.size(); i++){
+        res[i] = lhs * rhs[i];
+    }
+    return res;
+}
 
 double Polyhedron::volume() const{
 
@@ -202,25 +226,6 @@ double Polyhedron::volume() const{
     volume /= 6.0;
     return volume;
 }
-/*
-def volume(self):
-    if len(self.faces)==0: return 0.0
-
-    volume = 0.0
-    a = self.faces[0][0][0]
-    for face in self.faces:
-        face_vertices = extract_face_vertices(face)
-        if not vertex_in_list(a,face_vertices):
-            b = face_vertices[0]
-            for i in range(1,len(face_vertices)-1):
-                c = face_vertices[i]
-                d = face_vertices[i+1]
-                cross = np.cross(b-d,c-d)
-                dot = np.dot(a-d,cross)
-                volume += abs(dot)
-    volume *= (1.0/6)
-    return volume
-*/
 
 Edge otherEdge(const Face& face, const Edge& edge, const Vertex& vertex){
 
@@ -256,3 +261,151 @@ vector<Vertex> faceVertices(const Face& face){
 
     return vertices;
 }
+
+void Polyhedron::clip(const Vector& point, const Vector& normal){
+
+    Polyhedron &p = (*this);
+    Face newFace;
+
+    for(auto face = p.begin(); face != p.end();){
+
+        vector<Vertex> newEdge;
+
+        for(auto edge = face->begin(); edge != face->end();){
+
+            Vertex v1 = (*edge)[0];
+            Vertex v2 = (*edge)[1];
+
+            double v1normal = dot(v1-point, normal);
+            double v2normal = dot(v2-point, normal);
+
+            if(v1normal > -epsilon && v2normal > -epsilon){
+                // edge is in front of wall. Remove it.
+                edge = face->erase(edge);
+
+            } else if(v1normal <= -epsilon && v2normal <= -epsilon){
+                // edge is behind wall. Keep it as-is.
+                ++edge;
+
+            } else if(v1normal > -epsilon && v1normal <= epsilon){
+                // v1 is in plane. Add it as a new point.
+                newEdge.push_back(v1);
+                ++edge;
+
+            } else if(v2normal > -epsilon && v2normal <= epsilon){
+                // v2 is in plane. Add it as a new point.
+                newEdge.push_back(v2);
+                ++edge;
+
+            } else {
+                // edge intersects plane.
+
+                double edgeNormal = dot(v2-v1, normal);
+                double alpha = -v1normal / edgeNormal;
+                Vertex vNew = v1 + alpha*(v2-v1);
+
+                if(v1normal > epsilon)
+                    (*edge)[0] = vNew;
+                else
+                    (*edge)[1] = vNew;
+
+                newEdge.push_back(vNew);
+
+                ++edge;
+            }
+
+        }
+
+        assert(newEdge.size() == 0 || newEdge.size() == 2);
+        if(newEdge.size() == 2){
+            Edge trueNewEdge = {newEdge[0], newEdge[1]};
+            face->push_back(trueNewEdge);
+            newFace.push_back(trueNewEdge);
+        }
+
+        if(face->size()==0){
+            face = p.erase(face);
+        } else {
+            ++face;
+        }
+    }
+
+    if(newFace.size()>2)
+        p.push_back(newFace);
+}
+
+
+void updateEdge(Edge& edge, const Vector& point, const Vector& normal){
+
+    // Vertex v1 = edge[0];
+    // Vertex v2 = edge[1];
+    //
+    // double v1normal = dot(v1-point, normal);
+    // double v2normal = dot(v2-point, normal);
+    //
+    // if(v1normal > -epsilon && v2normal > -epsilon){
+    //     // TBD: somehow remove edge
+    //     //      return no new point
+    // }
+    //
+    // if(v1normal <= -epsilon && v2normal <= -epsilon){
+    //     // leave edge as-is
+    //     // TBD: return no new point
+    // }
+    //
+    // if(v1normal > -epsilon && v1normal <= epsilon){
+    //     // leave edge as-is
+    //     return v1;
+    // }
+    //
+    // if(v2normal > -epsilon && v2normal <= epsilon){
+    //     // leave edge as-is
+    //     return v2;
+    // }
+    //
+    // double edgeNormal = dot(v2-v1, normal);
+    // double alpha = -v1normal / edgeNormal;
+    // Vector vNew = v1 + alpha*(v2-v1);
+    //
+    // if(v1normal > epsilon)
+    //     edge[0] = vNew;
+    // else
+    //     edge[1] = vNew;
+    //
+    // return vNew;
+}
+
+/*
+def update_edge(edge, p, n):
+    v1 = edge[0]
+    v2 = edge[1]
+
+    # Normal component wrt plane
+    v1_normal = np.dot(v1-p,n)
+    v2_normal = np.dot(v2-p,n)
+
+    if v1_normal > -epsilon and v2_normal > -epsilon:
+        return None, None
+
+    if v1_normal <= -epsilon and v2_normal <= -epsilon:
+        return edge, None
+
+    if v1_normal > -epsilon and v1_normal <= epsilon: # in plane
+        return edge, v1
+
+    if v2_normal > -epsilon and v2_normal <= epsilon: # in plane
+        return edge, v2
+
+    edge_normal = np.dot(v2-v1,n)
+    alpha = -v1_normal / edge_normal
+    v_new = v1 + alpha*(v2-v1)
+
+    if v1_normal > epsilon:
+        edge[0] = v_new
+    else:
+        edge[1] = v_new
+
+    assert edge_length(edge)>epsilon
+
+    return edge, v_new
+*/

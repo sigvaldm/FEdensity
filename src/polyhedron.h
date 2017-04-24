@@ -5,7 +5,9 @@
  *
  * Handles representation, cutting and volume computations of arbitrary
  * polyhedrons.
- *
+ */
+
+/*
  * Copyright 2017 Sigvald Marholm <marholm@marebakken.com>
  *
  * This file is part of FEdensity.
@@ -23,6 +25,7 @@
  * You should have received a copy of the GNU General Public License along with
  * FEdensity. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #ifndef POLYHEDRON_H
 #define POLYHEDRON_H
 
@@ -36,6 +39,7 @@ using std::array;
 constexpr int nDims = 3;
 
 using Vertex = array<double, nDims>;
+using Vector = array<double, nDims>;
 using Edge   = array<Vertex, 2>;
 using Face   = vector<Edge>;
 
@@ -44,6 +48,7 @@ public:
     void tetrahedron(const vector<Vertex>& vertices);
     void cube(const Vertex& lower, const Vertex& upper);
     double volume() const;
+    void clip(const Vector& point, const Vector& normal);
 private:
 };
 
