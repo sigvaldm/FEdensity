@@ -1,6 +1,6 @@
 /**
  * @file		polyhedron.h
- * @brief		Polyhedron hanlding
+ * @brief		Polyhedron handling
  * @author		Sigvald Marholm <sigvaldm@fys.uio.no>,
  *
  * Handles representation, cutting and volume computations of arbitrary
@@ -36,28 +36,75 @@ using std::istream;
 using std::vector;
 using std::array;
 
+/// Number of geometric dimensions.
 constexpr int nDims = 3;
 
-using Vertex = array<double, nDims>;
+/// Geometric vectors (as opposed to stl::vector which is algebraic).
 using Vector = array<double, nDims>;
-using Edge   = array<Vertex, 2>;
-using Face   = vector<Edge>;
 
+///@name Geometric entities
+///@{
+using Vertex = Vector;              ///< A vertex.
+using Edge   = array<Vertex, 2>;    ///< An edge/line given by its end points.
+using Face   = vector<Edge>;        ///< A face consisting of several edges.
+///@}
+
+/**
+ * @brief An arbitrarily shaped polyhedron in 3D-space.
+ *
+ * A polyhedron is really just a list of faces. However, we've added a few
+ * additional methods for initialization, clipping and volume computation.
+ *
+ * The polyhedron is initially empty, and must be initialized using e.g.
+ * tetrahedron() or cube().
+ */
 class Polyhedron : public vector<Face> {
 public:
+    /**
+     * @brief Initialize tetrahedron.
+     * @param   vertices    The four vertices of the tetrahedron.
+     * @return              void
+     */
     void tetrahedron(const vector<Vertex>& vertices);
+
+    /**
+     * @brief Initialize cube/box.
+     * @param   lower   The vertex being the lowermost along all directions.
+     * @param   upper   The vertex being the uppermost along all directions.
+     * @return          void
+     */
     void cube(const Vertex& lower, const Vertex& upper);
-    double volume() const;
+
+    /**
+     * @brief Clip the polyhedron
+     * @param   point   Some arbitrary point in the clipping plane.
+     * @param   normal  A normal vector to the plane.
+     * @param           void
+     *
+     * A plane is specified by its (not necessarily unit-length) normal vector
+     * along with some point in the plane. The parts of the polyhedron in front
+     * of the plane (where the normal vector points) are then trimmed away.
+     */
     void clip(const Vector& point, const Vector& normal);
-private:
+
+    /**
+     * @brief Computes the volume
+     * @return      The volume of the polyhedron.
+     */
+    double volume() const;
 };
 
-vector<Vertex> faceVertices(const Face& face);
-
+/**
+ * @name Printing functions
+ *
+ * Overloading "put-to" operators for convenient printing.
+ */
+///@{
 ostream& operator<<(ostream& out, const Vertex& vertex);
 ostream& operator<<(ostream& out, const Edge& edge);
 ostream& operator<<(ostream& out, const vector<Vertex>& edge);
 ostream& operator<<(ostream& out, const Face& face);
 ostream& operator<<(ostream& out, const Polyhedron& polyhedron);
+///@}
 
 #endif // POLYHEDRON_H

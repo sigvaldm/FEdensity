@@ -31,77 +31,74 @@
 #include <cmath>
 #include <cassert>
 #include "polyhedron.h"
-using std::cout;
 
 constexpr double epsilon = 1e-10;
 
-/*
- * These two functions do something very unorthodox for the sake of performance:
- * They compare two vertices or edges represented by doubles using ==. This is
- * a rare exception where this actually works. It is of interest to test whether
- * two vertices/edges are the same (stored redundantly). They are not arrived
- * upon by different calculations, but by copying from the same calculation.
+/******************************************************************************
+ * LOCAL FUNCTION DECLARATIONS
+ *****************************************************************************/
+
+/**
+ * @name Vector operations
+ */
+///@{
+Vector operator+(const Vector& lhs, const Vector& rhs); ///< Addition
+Vector operator-(const Vector& lhs, const Vector& rhs); ///< Subtraction
+Vector operator*(double lhs, const Vector& rhs);        ///< Mult. by scalar
+double dot(const Vector& a, const Vector& b);           ///< Dot product
+Vector cross(const Vector& a, const Vector& b);         ///< Cross product
+///@}
+
+/**
+ * @brief Get vertices belonging to a face
+ * @param   face    Face.
+ * @return          Vertices in face.
+ */
+vector<Vertex> faceVertices(const Face& face);
+
+/**
+ * @brief Find the other edge a vertex belongs to.
+ * @param   face    Face.
+ * @param   edge    Curret edge.
+ * @param   vertex  Vertex.
+ * @return          Other edge.
+ *
+ * A vertex alwas connects two edges in the same face (it may connect more,
+ * but they don't belong to the same face). Given a face, a vertex and an edge,
+ * find the other edge.
+ *
+ * NB: This function is unorthodox in the sense that it compares two edges,
+ * consisting of floating point vertices, using ==. This gives higher speed
+ * than using a tolerance and is expected to work in this special case since
+ * vertices being the same are not computed independently but computed once and
+ * then copied.
  */
 Edge otherEdge(const Face& face, const Edge& edge, const Vertex& vertex);
+
+/**
+ * @brief Find the other vertex (end) of an edge.
+ * @param   edge    Edge.
+ * @param   vertex  Current vertex.
+ * @return          Other vertex.
+ *
+ * NB: This function is unorthodox in the sense that it compares two vertices,
+ * consisting of floating point numbers, using ==. This gives higher speed
+ * than using a tolerance and is expected to work in this special case since
+ * vertices being the same are not computed independently but computed once and
+ * then copied.
+ */
 Vertex otherVertex(const Edge& edge, const Vertex& vertex);
 
-double dot(const Vector& a, const Vector& b);
-Vector cross(const Vector& a, const Vector& b);
-Vector operator-(const Vector& lhs, const Vector& rhs);
-Vector operator+(const Vector& lhs, const Vector& rhs);
-Vector operator*(double lhs, const Vector& rhs);
+/**
+ * @brief The euclidean length of an edge
+ * @param   edge    Edge
+ * @return          The euclidean (2-norm) length
+ */
+double length(const Edge& edge);
 
-ostream& operator<<(ostream& out, const Vertex& vertex){
-
-    auto it = vertex.begin();
-    out << "(" << *it;
-
-    for(it++; it != vertex.end(); it++){
-        out << "," << *it;
-    }
-    return out << ")";
-}
-
-ostream& operator<<(ostream& out, const Edge& edge){
-
-    auto it = edge.begin();
-    out << *it;
-
-    for(it++; it != edge.end(); it++){
-        out << " - " << *it;
-    }
-    return out;
-}
-
-ostream& operator<<(ostream& out, const vector<Vertex>& edge){
-
-    auto it = edge.begin();
-    out << *it;
-
-    for(it++; it != edge.end(); it++){
-        out << ", " << *it;
-    }
-    return out;
-}
-
-ostream& operator<<(ostream& out, const Face& face){
-
-    out << "Face: \n";
-
-    for(auto const& edge : face){
-        out << "  " << edge << "\n";
-    }
-    return out;
-}
-
-ostream& operator<<(ostream& out, const Polyhedron& polyhedron){
-    out << "Polyhedron: \n\n";
-    for(auto const& face : polyhedron){
-        out << face << "\n";
-    }
-
-    return out;
-}
+/******************************************************************************
+ * POLYHEDRON METHODS
+ *****************************************************************************/
 
 void Polyhedron::tetrahedron(const vector<Vertex>& vertices){
 
@@ -163,57 +160,19 @@ void Polyhedron::cube(const Vertex& lower, const Vertex& upper){
     }
 }
 
-double dot(const Vector& a, const Vector& b){
-    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
-}
-
-Vector cross(const Vector& a, const Vector& b){
-    Vertex res;
-    res[0] = a[1]*b[2] - a[2]*b[1];
-    res[1] = a[2]*b[0] - a[0]*b[2];
-    res[2] = a[0]*b[1] - a[1]*b[0];
-    return res;
-}
-
-Vector operator-(const Vector& lhs, const Vector& rhs){
-    Vertex res;
-    for(size_t i=0; i<lhs.size(); i++){
-         res[i] = lhs[i] - rhs[i];
-    }
-    return res;
-}
-
-Vector operator+(const Vector& lhs, const Vector& rhs){
-    Vertex res;
-    for(size_t i=0; i<lhs.size(); i++){
-         res[i] = lhs[i] + rhs[i];
-    }
-    return res;
-}
-
-Vector operator*(double lhs, const Vector& rhs){
-    Vertex res;
-    for(size_t i=0; i<rhs.size(); i++){
-        res[i] = lhs * rhs[i];
-    }
-    return res;
-}
-
 double Polyhedron::volume() const{
 
     if(size()==0) return 0;
 
     double volume = 0;
-    Vertex a = (*this)[0][0][0];
+    Vertex a = *(this->begin()->begin()->begin()); //(*this)[0][0][0];
 
-    for(auto face : *this){
+    for(const auto& face : (*this)){
 
         vector<Vertex> vertices = faceVertices(face);
-
         auto start = vertices.begin();
         auto stop  = vertices.end();
-        if(std::find(start, stop, a) == stop){
-
+        if(std::find(start, stop, a) == stop || true){
             Vertex b = vertices[0];
             for(auto it=start+1; it != stop-1; it++){
                 Vertex c = *it;
@@ -225,41 +184,6 @@ double Polyhedron::volume() const{
     }
     volume /= 6.0;
     return volume;
-}
-
-Edge otherEdge(const Face& face, const Edge& edge, const Vertex& vertex){
-
-    for(const auto& otherEdge : face){
-        if(otherEdge != edge){
-            auto start = otherEdge.begin();
-            auto stop  = otherEdge.end();
-            if(std::find(start, stop, vertex) != stop){
-                return otherEdge;
-            }
-        }
-    }
-    return edge;
-}
-
-Vertex otherVertex(const Edge& edge, const Vertex& vertex){
-    return (vertex==edge[0] ? edge[1] : edge[0]);
-}
-
-vector<Vertex> faceVertices(const Face& face){
-
-    vector<Vertex> vertices;
-
-    Edge edge = face[0];
-    Vertex vertex = edge[0];
-    Vertex start = vertex;
-
-    do {
-        vertices.push_back(vertex);
-        edge = otherEdge(face, edge, vertex);
-        vertex = otherVertex(edge, vertex);
-    } while(vertex != start);
-
-    return vertices;
 }
 
 void Polyhedron::clip(const Vector& point, const Vector& normal){
@@ -319,8 +243,10 @@ void Polyhedron::clip(const Vector& point, const Vector& normal){
         assert(newEdge.size() == 0 || newEdge.size() == 2);
         if(newEdge.size() == 2){
             Edge trueNewEdge = {newEdge[0], newEdge[1]};
-            face->push_back(trueNewEdge);
-            newFace.push_back(trueNewEdge);
+            if(length(trueNewEdge)>epsilon){
+                face->push_back(trueNewEdge);
+                newFace.push_back(trueNewEdge);
+            }
         }
 
         if(face->size()==0){
@@ -334,78 +260,144 @@ void Polyhedron::clip(const Vector& point, const Vector& normal){
         p.push_back(newFace);
 }
 
+/******************************************************************************
+ * LOCAL HELPER FUNCTIONS
+ *****************************************************************************/
 
-void updateEdge(Edge& edge, const Vector& point, const Vector& normal){
+Edge otherEdge(const Face& face, const Edge& edge, const Vertex& vertex){
 
-    // Vertex v1 = edge[0];
-    // Vertex v2 = edge[1];
-    //
-    // double v1normal = dot(v1-point, normal);
-    // double v2normal = dot(v2-point, normal);
-    //
-    // if(v1normal > -epsilon && v2normal > -epsilon){
-    //     // TBD: somehow remove edge
-    //     //      return no new point
-    // }
-    //
-    // if(v1normal <= -epsilon && v2normal <= -epsilon){
-    //     // leave edge as-is
-    //     // TBD: return no new point
-    // }
-    //
-    // if(v1normal > -epsilon && v1normal <= epsilon){
-    //     // leave edge as-is
-    //     return v1;
-    // }
-    //
-    // if(v2normal > -epsilon && v2normal <= epsilon){
-    //     // leave edge as-is
-    //     return v2;
-    // }
-    //
-    // double edgeNormal = dot(v2-v1, normal);
-    // double alpha = -v1normal / edgeNormal;
-    // Vector vNew = v1 + alpha*(v2-v1);
-    //
-    // if(v1normal > epsilon)
-    //     edge[0] = vNew;
-    // else
-    //     edge[1] = vNew;
-    //
-    // return vNew;
+    for(const auto& otherEdge : face){
+        if(otherEdge != edge){
+            auto start = otherEdge.begin();
+            auto stop  = otherEdge.end();
+            if(std::find(start, stop, vertex) != stop){
+                return otherEdge;
+            }
+        }
+    }
+    return edge;
 }
 
-/*
-def update_edge(edge, p, n):
-    v1 = edge[0]
-    v2 = edge[1]
+Vertex otherVertex(const Edge& edge, const Vertex& vertex){
+    return (vertex==edge[0] ? edge[1] : edge[0]);
+}
 
-    # Normal component wrt plane
-    v1_normal = np.dot(v1-p,n)
-    v2_normal = np.dot(v2-p,n)
+vector<Vertex> faceVertices(const Face& face){
 
-    if v1_normal > -epsilon and v2_normal > -epsilon:
-        return None, None
+    vector<Vertex> vertices;
 
-    if v1_normal <= -epsilon and v2_normal <= -epsilon:
-        return edge, None
+    Edge edge = *(face.begin());
+    Vertex vertex = edge[0];
+    Vertex start = vertex;
 
-    if v1_normal > -epsilon and v1_normal <= epsilon: # in plane
-        return edge, v1
+    do {
+        vertices.push_back(vertex);
+        edge = otherEdge(face, edge, vertex);
+        vertex = otherVertex(edge, vertex);
+    } while(vertex != start);
 
-    if v2_normal > -epsilon and v2_normal <= epsilon: # in plane
-        return edge, v2
+    return vertices;
+}
 
-    edge_normal = np.dot(v2-v1,n)
-    alpha = -v1_normal / edge_normal
-    v_new = v1 + alpha*(v2-v1)
+double length(const Edge& edge){
+    Vertex v = edge[1]-edge[0];
+    double l = 0;
+    for(const auto& c : v) l += c*c;
+    return l;
+}
 
-    if v1_normal > epsilon:
-        edge[0] = v_new
-    else:
-        edge[1] = v_new
+/******************************************************************************
+ * ARITHMETIC OPERATIONS (LOCAL)
+ *****************************************************************************/
 
-    assert edge_length(edge)>epsilon
+double dot(const Vector& a, const Vector& b){
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+}
 
-    return edge, v_new
-*/
+Vector cross(const Vector& a, const Vector& b){
+    Vertex res;
+    res[0] = a[1]*b[2] - a[2]*b[1];
+    res[1] = a[2]*b[0] - a[0]*b[2];
+    res[2] = a[0]*b[1] - a[1]*b[0];
+    return res;
+}
+
+Vector operator-(const Vector& lhs, const Vector& rhs){
+    Vertex res;
+    for(size_t i=0; i<lhs.size(); i++){
+        res[i] = lhs[i] - rhs[i];
+    }
+    return res;
+}
+
+Vector operator+(const Vector& lhs, const Vector& rhs){
+    Vertex res;
+    for(size_t i=0; i<lhs.size(); i++){
+        res[i] = lhs[i] + rhs[i];
+    }
+    return res;
+}
+
+Vector operator*(double lhs, const Vector& rhs){
+    Vertex res;
+    for(size_t i=0; i<rhs.size(); i++){
+        res[i] = lhs * rhs[i];
+    }
+    return res;
+}
+
+/******************************************************************************
+ * PRINTING OPERATORS (LOCAL)
+ *****************************************************************************/
+
+ostream& operator<<(ostream& out, const Vertex& vertex){
+
+    auto it = vertex.begin();
+    out << "(" << *it;
+
+    for(it++; it != vertex.end(); it++){
+        out << "," << *it;
+    }
+    return out << ")";
+}
+
+ostream& operator<<(ostream& out, const Edge& edge){
+
+    auto it = edge.begin();
+    out << *it;
+
+    for(it++; it != edge.end(); it++){
+        out << " - " << *it;
+    }
+    return out;
+}
+
+ostream& operator<<(ostream& out, const vector<Vertex>& edge){
+
+    auto it = edge.begin();
+    out << *it;
+
+    for(it++; it != edge.end(); it++){
+        out << ", " << *it;
+    }
+    return out;
+}
+
+ostream& operator<<(ostream& out, const Face& face){
+
+    out << "Face: \n";
+
+    for(auto const& edge : face){
+        out << "  " << edge << "\n";
+    }
+    return out;
+}
+
+ostream& operator<<(ostream& out, const Polyhedron& polyhedron){
+    out << "Polyhedron: \n\n";
+    for(auto const& face : polyhedron){
+        out << face << "\n";
+    }
+
+    return out;
+}

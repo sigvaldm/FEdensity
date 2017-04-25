@@ -22,10 +22,11 @@
 
 CC		= g++
 COPT	= -O3
+CADD    =
 
 EXEC = fedensity
 
-CFLAGS = -std=c++14 -Wall
+CFLAGS = -std=c++17 -Wall $(CADD)
 
 SDIR	= src
 ODIR	= src/obj

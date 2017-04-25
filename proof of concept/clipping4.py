@@ -253,12 +253,12 @@ if __name__ == '__main__':
 
 
 
-    vertices = [np.array([0,0,0]),
-                np.array([1,0,0]),
-                np.array([0,1,0]),
-                np.array([0,0,1])]
-
-    p2 = Polyhedron(*vertices)
+    # vertices = [np.array([0,0,0]),
+    #             np.array([1,0,0]),
+    #             np.array([0,1,0]),
+    #             np.array([0,0,1])]
+    #
+    # p2 = Polyhedron(*vertices)
     # p.clip([0.5,0,0],[1,0,0])
     # # p.clip([0.3,0,0],[1,0,0])
     # # p.clip([0.1,0,0],[1,0,0])
@@ -269,25 +269,25 @@ if __name__ == '__main__':
     # print(p.volume())
     # p.plot()
 
-    vertices = [np.array([-2,-2,-2]),
-                np.array([8,-2,-2]),
-                np.array([-2,8,-2]),
-                np.array([-2,-2,8])]
-
-    p = Polyhedron(*vertices)
-    p.clip([1,0,0],[1,0,0])
-    p.clip([0,1,0],[0,1,0])
-    p.clip([0,0,1],[0,0,1])
-
-    for theta in range(0,360,1):
-        theta_rad = float(theta) * np.pi / 180
-        x = np.cos(theta_rad)
-        y = np.sin(theta_rad)
-        p.clip([x,y,0],[x,y,-0.5])
-        p.clip([x,y,0],[x,y,1])
-    p.clip([0,0,0.3],[0,0,1])
-    print(p.volume())
-    p.plot()
+    # vertices = [np.array([-2,-2,-2]),
+    #             np.array([8,-2,-2]),
+    #             np.array([-2,8,-2]),
+    #             np.array([-2,-2,8])]
+    #
+    # p = Polyhedron(*vertices)
+    # p.clip([1,0,0],[1,0,0])
+    # p.clip([0,1,0],[0,1,0])
+    # p.clip([0,0,1],[0,0,1])
+    #
+    # for theta in range(0,360,1):
+    #     theta_rad = float(theta) * np.pi / 180
+    #     x = np.cos(theta_rad)
+    #     y = np.sin(theta_rad)
+    #     p.clip([x,y,0],[x,y,-0.5])
+    #     p.clip([x,y,0],[x,y,1])
+    # p.clip([0,0,0.3],[0,0,1])
+    # print(p.volume())
+    # p.plot()
 
 
     vertices = [np.array([-1,-1,-1]),
@@ -306,7 +306,7 @@ if __name__ == '__main__':
         x = np.cos(theta_rad)
         y = np.sin(theta_rad)
         p.clip([x,y,0],[x,y,0])
-    p.clip([0,0,0.3],[0,0,1])
+    # p.clip([0,0,0.3],[0,0,1])
     t1 = time.time()
     print("Cutting:",t1-t0)
     t0 = time.time()
@@ -314,4 +314,4 @@ if __name__ == '__main__':
     t1 = time.time()
     print("Volume:",t1-t0)
     print(volume)
-    p.plot()
+    # p.plot()
