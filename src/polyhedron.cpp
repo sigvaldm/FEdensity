@@ -39,17 +39,6 @@ constexpr double epsilon = 1e-10;
  *****************************************************************************/
 
 /**
- * @name Vector operations
- */
-///@{
-Vector operator+(const Vector& lhs, const Vector& rhs); ///< Addition
-Vector operator-(const Vector& lhs, const Vector& rhs); ///< Subtraction
-Vector operator*(double lhs, const Vector& rhs);        ///< Mult. by scalar
-double dot(const Vector& a, const Vector& b);           ///< Dot product
-Vector cross(const Vector& a, const Vector& b);         ///< Cross product
-///@}
-
-/**
  * @brief Get vertices belonging to a face
  * @param   face    Face.
  * @return          Vertices in face.
@@ -100,10 +89,11 @@ double length(const Edge& edge);
  * POLYHEDRON METHODS
  *****************************************************************************/
 
-void Polyhedron::tetrahedron(const vector<Vertex>& vertices){
+Polyhedron::Polyhedron(const array<Vertex, nDims+1>& vertices){
 
     vector<Edge> edges;
     edges.reserve(6);
+    (*this).reserve(4);
 
     for(auto it = vertices.begin(); it != vertices.end(); it++){
         for(auto it2 = it + 1; it2 != vertices.end(); it2++){
@@ -118,7 +108,7 @@ void Polyhedron::tetrahedron(const vector<Vertex>& vertices){
     this->push_back(Face {edges[0], edges[1], edges[3]});
 }
 
-void Polyhedron::cube(const Vertex& lower, const Vertex& upper){
+Polyhedron::Polyhedron(const Vertex& lower, const Vertex& upper){
 
     // Agreed, this function needs rewriting, but it works for now.
 

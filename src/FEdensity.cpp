@@ -1,5 +1,5 @@
 /**
- * @file		FEdensity.h
+ * @file		FEdensity.cpp
  * @brief		FEdensity API
  * @author		Sigvald Marholm <sigvaldm@fys.uio.no>,
  */
@@ -23,27 +23,31 @@
  * FEdensity. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <vector>
-#include <array>
-#include <string>
-#include "version.h"
-#include "polyhedron.h"
-using std::vector;
-using std::array;
-using std::string;
+#include "FEdensity.h"
 
-class Cell {
-public:
-    array<int, nDims+1> vertices;
-    // array<Cell*, nDims+1> neighbors;
-};
+vector<double> Mesh::pittewayVolume() const{
 
-class Mesh {
-public:
-    vector<double> pittewayVolume() const;
-    vector<Vertex> vertices;
-    vector<Cell> cells;
-};
+    vector<double> volume(vertices.size());
 
-Mesh readGmsh(const string& filename);
-;
+    for(const auto& cell : cells){
+        array<Vertex, nDims+1> vs;
+        for(int i=0; i<nDims+1; i++) vs[i] = vertices[cell.vertices[i]];
+
+        for(int i=0; i<nDims+1; i++){
+            Polyhedron p(vs);
+
+            for(int j=0; j<nDims+1; j++){
+                if(j!=i){
+                    Vector point = 0.5*(vertices[j]+vertices[i]);
+                    Vector normal = vertices[j]-vertices[i];
+                    p.clip(point,normal);
+                }
+            }
+
+            volume[i] += p.volume();
+
+        }
+    }
+
+    return volume;
+}

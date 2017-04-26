@@ -2,11 +2,12 @@
  * @file		main.cpp
  * @brief		Stand-alone FEdensity command line tool
  * @author		Sigvald Marholm <sigvaldm@fys.uio.no>,
- *
- * Copyright 2017 Sigvald Marholm <marholm@marebakken.com>
  */
 
-/* This file is part of FEdensity.
+/*
+ * Copyright 2017 Sigvald Marholm <marholm@marebakken.com>
+ *
+ * This file is part of FEdensity.
  *
  * FEdensity is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
@@ -25,6 +26,7 @@
 #include <iostream>
 #include <cmath>
 #include <ctime>
+#include <numeric>
 #include "FEdensity.h"
 #include "polyhedron.h"
 using std::cout;
@@ -48,17 +50,27 @@ int main(){
     // cout << p;
     // cout << p.volume() << "\n";
 
-    Polyhedron p;
-    p.cube({-1,-1,-1},{1,1,1});
-    clock_t t = clock();
-    for(int theta = 0; theta<360; theta++){
-        double theta_rad = theta * 3.1415926535 / 180.0;
-        double x = cos(theta_rad);
-        double y = sin(theta_rad);
-        p.clip({x,y,0},{x,y,0});
-    }
-    cout << "Cutting: " << 1000.0*(clock()-t)/CLOCKS_PER_SEC << "ms" << endl;
-    t = clock();
-    cout << p.volume() << "\n";
-    cout << "Volume: " << 1000.0*(clock()-t)/CLOCKS_PER_SEC << "ms" << endl;
+    // Polyhedron p;
+    // p.cube({-1,-1,-1},{1,1,1});
+    // clock_t t = clock();
+    // for(int theta = 0; theta<360; theta++){
+    //     double theta_rad = theta * 3.1415926535 / 180.0;
+    //     double x = cos(theta_rad);
+    //     double y = sin(theta_rad);
+    //     p.clip({x,y,0},{x,y,0});
+    // }
+    // cout << "Cutting: " << 1000.0*(clock()-t)/CLOCKS_PER_SEC << "ms" << endl;
+    // t = clock();
+    // cout << p.volume() << "\n";
+    // cout << "Volume: " << 1000.0*(clock()-t)/CLOCKS_PER_SEC << "ms" << endl;
+
+    Mesh mesh = readGmsh("mesh/sphere.msh");
+    vector<double> volume = mesh.pittewayVolume();
+    double totalVolume = std::accumulate(volume.begin(), volume.end(), 0.0f);
+    cout << totalVolume << "\n";
+
+
+
+    cout << "FEdensity " << VERSION << " ended successfully.\n";
+    return 0;
 }

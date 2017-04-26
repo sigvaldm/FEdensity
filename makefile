@@ -34,7 +34,7 @@ HDIR	= src
 DDIR	= doc
 
 HEAD_	= polyhedron.h FEdensity.h
-SRC_	= polyhedron.cpp
+SRC_	= polyhedron.cpp FEdensity.cpp io.cpp
 OBJ_	= $(SRC_:.cpp=.o)
 DOC_	= main.dox
 

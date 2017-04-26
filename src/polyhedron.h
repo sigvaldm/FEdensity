@@ -63,17 +63,15 @@ public:
     /**
      * @brief Initialize tetrahedron.
      * @param   vertices    The four vertices of the tetrahedron.
-     * @return              void
      */
-    void tetrahedron(const vector<Vertex>& vertices);
+    Polyhedron(const array<Vertex, nDims+1>& vertices);
 
     /**
      * @brief Initialize cube/box.
      * @param   lower   The vertex being the lowermost along all directions.
      * @param   upper   The vertex being the uppermost along all directions.
-     * @return          void
      */
-    void cube(const Vertex& lower, const Vertex& upper);
+    Polyhedron(const Vertex& lower, const Vertex& upper);
 
     /**
      * @brief Clip the polyhedron
@@ -105,6 +103,17 @@ ostream& operator<<(ostream& out, const Edge& edge);
 ostream& operator<<(ostream& out, const vector<Vertex>& edge);
 ostream& operator<<(ostream& out, const Face& face);
 ostream& operator<<(ostream& out, const Polyhedron& polyhedron);
+///@}
+
+/**
+ * @name Vector operations
+ */
+///@{
+Vector operator+(const Vector& lhs, const Vector& rhs); ///< Addition
+Vector operator-(const Vector& lhs, const Vector& rhs); ///< Subtraction
+Vector operator*(double lhs, const Vector& rhs);        ///< Mult. by scalar
+double dot(const Vector& a, const Vector& b);           ///< Dot product
+Vector cross(const Vector& a, const Vector& b);         ///< Cross product
 ///@}
 
 #endif // POLYHEDRON_H
