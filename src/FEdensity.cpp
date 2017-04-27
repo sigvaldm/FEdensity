@@ -24,13 +24,15 @@
  */
 
 #include "FEdensity.h"
+using poly::Point;
+using poly::Polyhedron;
 
 vector<double> Mesh::pittewayVolume() const{
 
     vector<double> volume(vertices.size());
 
     for(const auto& cell : cells){
-        array<Vertex, nDims+1> vs;
+        array<Point, nDims+1> vs;
         for(int i=0; i<nDims+1; i++) vs[i] = vertices[cell.vertices[i]];
 
         for(int i=0; i<nDims+1; i++){
@@ -38,8 +40,8 @@ vector<double> Mesh::pittewayVolume() const{
 
             for(int j=0; j<nDims+1; j++){
                 if(j!=i){
-                    Vector point = 0.5*(vertices[j]+vertices[i]);
-                    Vector normal = vertices[j]-vertices[i];
+                    Point point = 0.5*(vertices[j]+vertices[i]);
+                    Point normal = vertices[j]-vertices[i];
                     p.clip(point,normal);
                 }
             }

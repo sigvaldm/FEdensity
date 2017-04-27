@@ -31,18 +31,15 @@
 #include "polyhedron.h"
 using std::cout;
 using std::endl;
-
-// Vertex v1 = {1,2,3};
-// Vertex v2 = {2,3,4};
-// Edge edge = {v1,v2};
-// Face face = {edge,edge};
+using poly::Polyhedron;
+using poly::Point;
 
 int main(){
     cout << "FEdensity " << VERSION << " running.\n";
 
 
-    // Polyhedron p;
-    // p.tetrahedron({{0,0,0},{1,0,0},{0,1,0},{0,0,1}});
+    // std::array<Point, 4> arr {Point(0,0,0),Point(1,0,0),Point(0,1,0),Point(0,0,1)};
+    // Polyhedron p(arr);
     // // p.cube({0,0,0},{1,1,1});
     // p.clip({0.5,0,0},{0.5,0,0});
     // p.clip({0,0.5,0},{0,0.5,0});

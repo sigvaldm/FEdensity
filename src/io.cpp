@@ -54,7 +54,7 @@ Mesh readGmsh(const string& filename){
     for(int i=0; i<nNodes; i++){
         infile >> id >> x >> y >> z;
         assert(id==id_++);
-        mesh.vertices.push_back(Vertex {x,y,z});
+        mesh.vertices.push_back(Point(x,y,z));
     }
 
     infile >> line;

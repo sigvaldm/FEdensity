@@ -31,6 +31,8 @@
 using std::vector;
 using std::array;
 using std::string;
+using poly::Point;
+using poly::nDims;
 
 class Cell {
 public:
@@ -41,7 +43,7 @@ public:
 class Mesh {
 public:
     vector<double> pittewayVolume() const;
-    vector<Vertex> vertices;
+    vector<Point> vertices;
     vector<Cell> cells;
 };
 

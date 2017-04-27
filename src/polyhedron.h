@@ -31,6 +31,11 @@
 
 #include <vector>
 #include <array>
+#include <initializer_list>
+
+namespace poly {
+
+using std::initializer_list;
 using std::ostream;
 using std::istream;
 using std::vector;
@@ -39,39 +44,100 @@ using std::array;
 /// Number of geometric dimensions.
 constexpr int nDims = 3;
 
-/// Geometric vectors (as opposed to stl::vector which is algebraic).
-using Vector = array<double, nDims>;
+/**
+ * @brief A cartesian point or geometric (not algebraic) vector.
+ *
+ * 1D and 2D vectors can be represented by simply not using all coordinates.
+ *
+ * A fixed-size std::array is used instead of std::vector to eliminate a level
+ * of pointer dereferring in the algorithms using this structure thereby
+ * improving performance at the cost of always allocating 3 elements even for
+ * 1D and 2D vectors.
+ *
+ * NB: Inheriting (especially publicly) from STL is a controversial topic. The
+ * defense for doing so is that this _is_ an array with all its native features.
+ * One of the often quoted reasons for not inheriting STL containers is their
+ * lack of virtual destructors. This pose no problem here because no additional
+ * member variables are allocated. Why not just use an alias? Because:
+ *  1. We want to benefit from static type-checking.
+ *  2. We like to add special operators/functions for this type only.
+ *  3. For consistency with the Polyhedron type.
+ */
+class Point : public array<double, nDims> {
+public:
+    Point(){}                              ///< Uninitialized
+    Point(double x);                       ///< 1D initialization
+    Point(double x, double y);             ///< 2D initialization
+    Point(double x, double y, double z);   ///< 3D initialization
+};
 
-///@name Geometric entities
+/**
+ * @name Vector operations on Points
+ */
 ///@{
-using Vertex = Vector;              ///< A vertex.
-using Edge   = array<Vertex, 2>;    ///< An edge/line given by its end points.
-using Face   = vector<Edge>;        ///< A face consisting of several edges.
+double dot(const Point& a, const Point& b);          ///< Dot product
+Point cross(const Point& a, const Point& b);         ///< Cross product
+Point operator+(const Point& lhs, const Point& rhs); ///< Addition
+Point operator-(const Point& lhs, const Point& rhs); ///< Subtraction
+Point operator*(double lhs, const Point& rhs); ///< Multiplication by scalar
+Point operator*(const Point& lhs, double rhs); ///< Multiplication by scalar
 ///@}
 
 /**
- * @brief An arbitrarily shaped polyhedron in 3D-space.
+ * @brief A straight line represented by two end-points.
  *
- * A polyhedron is really just a list of faces. However, we've added a few
- * additional methods for initialization, clipping and volume computation.
+ * A fixed-size std::array as opposed to vectors improves performance due to
+ * one less level of pointer dereferring.
  *
- * The polyhedron is initially empty, and must be initialized using e.g.
- * tetrahedron() or cube().
+ * NB: See Point for discussion of inherting from STL.
  */
-class Polyhedron : public vector<Face> {
+class Line : public array<Point, 2> {
 public:
+    Line(){}                                ///< Uninitialized
+    Line(const Point& a, const Point& b);   ///< Initialized by end-points
+    double length() const;                  ///< Euclidean length
+};
+
+/**
+ * @brief A polygon represented by a set of edges.
+ *
+ * NB: See Point for discussion of inherting from STL.
+ */
+class Polygon : public vector<Line> {
+public:
+    /// Uninitialized polygon
+    Polygon(){}
+
+    /// Polygon with specified lines
+    Polygon(const initializer_list<Line>& v) : vector<Line>(v) {}
+
+    /// Return vertices in polygon
+    vector<Point> vertices() const;
+};
+///@}
+
+/**
+ * @brief A polyhedron represented by a set of faces.
+ *
+ * NB: See Point for discussion of inherting from STL.
+ */
+class Polyhedron : public vector<Polygon> {
+public:
+
+    Polyhedron(){}
+
     /**
      * @brief Initialize tetrahedron.
      * @param   vertices    The four vertices of the tetrahedron.
      */
-    Polyhedron(const array<Vertex, nDims+1>& vertices);
+    Polyhedron(const array<Point, nDims+1>& vertices);
 
     /**
      * @brief Initialize cube/box.
      * @param   lower   The vertex being the lowermost along all directions.
      * @param   upper   The vertex being the uppermost along all directions.
      */
-    Polyhedron(const Vertex& lower, const Vertex& upper);
+    Polyhedron(const Point& lower, const Point& upper);
 
     /**
      * @brief Clip the polyhedron
@@ -83,7 +149,7 @@ public:
      * along with some point in the plane. The parts of the polyhedron in front
      * of the plane (where the normal vector points) are then trimmed away.
      */
-    void clip(const Vector& point, const Vector& normal);
+    void clip(const Point& point, const Point& normal);
 
     /**
      * @brief Computes the volume
@@ -98,22 +164,13 @@ public:
  * Overloading "put-to" operators for convenient printing.
  */
 ///@{
-ostream& operator<<(ostream& out, const Vertex& vertex);
-ostream& operator<<(ostream& out, const Edge& edge);
-ostream& operator<<(ostream& out, const vector<Vertex>& edge);
-ostream& operator<<(ostream& out, const Face& face);
+ostream& operator<<(ostream& out, const Point& vertex);
+ostream& operator<<(ostream& out, const Line& edge);
+ostream& operator<<(ostream& out, const vector<Point>& edge);
+ostream& operator<<(ostream& out, const Polygon& face);
 ostream& operator<<(ostream& out, const Polyhedron& polyhedron);
 ///@}
 
-/**
- * @name Vector operations
- */
-///@{
-Vector operator+(const Vector& lhs, const Vector& rhs); ///< Addition
-Vector operator-(const Vector& lhs, const Vector& rhs); ///< Subtraction
-Vector operator*(double lhs, const Vector& rhs);        ///< Mult. by scalar
-double dot(const Vector& a, const Vector& b);           ///< Dot product
-Vector cross(const Vector& a, const Vector& b);         ///< Cross product
-///@}
+} // namespace poly
 
 #endif // POLYHEDRON_H

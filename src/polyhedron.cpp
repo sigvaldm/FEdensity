@@ -32,6 +32,8 @@
 #include <cassert>
 #include "polyhedron.h"
 
+namespace poly {
+
 constexpr double epsilon = 1e-10;
 
 /******************************************************************************
@@ -39,17 +41,10 @@ constexpr double epsilon = 1e-10;
  *****************************************************************************/
 
 /**
- * @brief Get vertices belonging to a face
- * @param   face    Face.
- * @return          Vertices in face.
- */
-vector<Vertex> faceVertices(const Face& face);
-
-/**
  * @brief Find the other edge a vertex belongs to.
- * @param   face    Face.
+ * @param   face    Polygon.
  * @param   edge    Curret edge.
- * @param   vertex  Vertex.
+ * @param   vertex  Point.
  * @return          Other edge.
  *
  * A vertex alwas connects two edges in the same face (it may connect more,
@@ -62,11 +57,11 @@ vector<Vertex> faceVertices(const Face& face);
  * vertices being the same are not computed independently but computed once and
  * then copied.
  */
-Edge otherEdge(const Face& face, const Edge& edge, const Vertex& vertex);
+Line otherEdge(const Polygon& face, const Line& edge, const Point& vertex);
 
 /**
  * @brief Find the other vertex (end) of an edge.
- * @param   edge    Edge.
+ * @param   edge    Line.
  * @param   vertex  Current vertex.
  * @return          Other vertex.
  *
@@ -76,51 +71,68 @@ Edge otherEdge(const Face& face, const Edge& edge, const Vertex& vertex);
  * vertices being the same are not computed independently but computed once and
  * then copied.
  */
-Vertex otherVertex(const Edge& edge, const Vertex& vertex);
-
-/**
- * @brief The euclidean length of an edge
- * @param   edge    Edge
- * @return          The euclidean (2-norm) length
- */
-double length(const Edge& edge);
+Point otherVertex(const Line& edge, const Point& vertex);
 
 /******************************************************************************
- * POLYHEDRON METHODS
+ * VARIOUS CONSTRUCTORS
  *****************************************************************************/
 
-Polyhedron::Polyhedron(const array<Vertex, nDims+1>& vertices){
+Point::Point(double x, double y, double z){
+    (*this)[0] = x;
+    (*this)[1] = y;
+    (*this)[2] = z;
+}
 
-    vector<Edge> edges;
+Point::Point(double x, double y){
+    (*this)[0] = x;
+    (*this)[1] = y;
+}
+
+Point::Point(double x){
+    (*this)[0] = x;
+}
+
+Line::Line(const Point& a, const Point& b){
+    (*this)[0] = a;
+    (*this)[1] = b;
+}
+
+/******************************************************************************
+ * POLYHEDRON METHODS AND CONSTRUCTORS
+ *****************************************************************************/
+
+Polyhedron::Polyhedron(const array<Point, nDims+1>& vertices){
+
+    vector<Line> edges;
     edges.reserve(6);
     (*this).reserve(4);
 
     for(auto it = vertices.begin(); it != vertices.end(); it++){
         for(auto it2 = it + 1; it2 != vertices.end(); it2++){
-            Edge edge = {*it, *it2};
+            Line edge(*it, *it2);
             edges.push_back(edge);
         }
     }
 
-    this->push_back(Face {edges[3], edges[4], edges[5]});
-    this->push_back(Face {edges[1], edges[2], edges[5]});
-    this->push_back(Face {edges[0], edges[2], edges[4]});
-    this->push_back(Face {edges[0], edges[1], edges[3]});
+    this->push_back(Polygon {edges[3], edges[4], edges[5]});
+    this->push_back(Polygon {edges[1], edges[2], edges[5]});
+    this->push_back(Polygon {edges[0], edges[2], edges[4]});
+    this->push_back(Polygon {edges[0], edges[1], edges[3]});
 }
 
-Polyhedron::Polyhedron(const Vertex& lower, const Vertex& upper){
+Polyhedron::Polyhedron(const Point& lower, const Point& upper){
 
     // Agreed, this function needs rewriting, but it works for now.
 
     constexpr int nCorners = 8;
     constexpr int nFaces = 6;
 
-    vector<Vertex> vertices;
+    vector<Point> vertices;
     vertices.reserve(nCorners);
 
     // Get all combinations of lower and upper in binary ordering
     for(int i=0; i<nCorners; i++){
-        Vertex v;
+        Point v;
         int temp = i;
         for(int d=nDims-1; d>=0 ; d--){
             v[d] = (temp%2) ? upper[d] : lower[d];
@@ -137,15 +149,15 @@ Polyhedron::Polyhedron(const Vertex& lower, const Vertex& upper){
         int i = (d+1)%3;
         int j = (d+2)%3;
         for(int ul=0; ul<2; ul++){
-            Vertex aa = vertices[ul*arr[d]];
-            Vertex bb = vertices[ul*arr[d]+arr[i]];
-            Vertex cc = vertices[ul*arr[d]+arr[i]+arr[j]];
-            Vertex dd = vertices[ul*arr[d]+arr[j]];
-            Edge ab = {aa, bb};
-            Edge bc = {bb, cc};
-            Edge cd = {cc, dd};
-            Edge da = {dd, aa};
-            p.push_back(Face {ab, bc, cd, da});
+            Point aa = vertices[ul*arr[d]];
+            Point bb = vertices[ul*arr[d]+arr[i]];
+            Point cc = vertices[ul*arr[d]+arr[i]+arr[j]];
+            Point dd = vertices[ul*arr[d]+arr[j]];
+            Line ab(aa,bb);
+            Line bc(bb,cc);
+            Line cd(cc,dd);
+            Line da(dd,aa);
+            p.push_back(Polygon {ab, bc, cd, da});
         }
     }
 }
@@ -155,19 +167,19 @@ double Polyhedron::volume() const{
     if(size()==0) return 0;
 
     double volume = 0;
-    Vertex a = *(this->begin()->begin()->begin()); //(*this)[0][0][0];
+    Point a = *(this->begin()->begin()->begin()); //(*this)[0][0][0];
 
     for(const auto& face : (*this)){
 
-        vector<Vertex> vertices = faceVertices(face);
+        vector<Point> vertices = face.vertices();
         auto start = vertices.begin();
         auto stop  = vertices.end();
         if(std::find(start, stop, a) == stop || true){
-            Vertex b = vertices[0];
+            Point b = vertices[0];
             for(auto it=start+1; it != stop-1; it++){
-                Vertex c = *it;
-                Vertex d = *(it+1);
-                Vertex temp = cross(b-d, c-d);
+                Point c = *it;
+                Point d = *(it+1);
+                Point temp = cross(b-d, c-d);
                 volume += std::abs(dot(a-d, temp));
             }
         }
@@ -176,19 +188,19 @@ double Polyhedron::volume() const{
     return volume;
 }
 
-void Polyhedron::clip(const Vector& point, const Vector& normal){
+void Polyhedron::clip(const Point& point, const Point& normal){
 
     Polyhedron &p = (*this);
-    Face newFace;
+    Polygon newFace;
 
     for(auto face = p.begin(); face != p.end();){
 
-        vector<Vertex> newEdge;
+        vector<Point> newEdge;
 
         for(auto edge = face->begin(); edge != face->end();){
 
-            Vertex v1 = (*edge)[0];
-            Vertex v2 = (*edge)[1];
+            Point v1 = (*edge)[0];
+            Point v2 = (*edge)[1];
 
             double v1normal = dot(v1-point, normal);
             double v2normal = dot(v2-point, normal);
@@ -216,7 +228,7 @@ void Polyhedron::clip(const Vector& point, const Vector& normal){
 
                 double edgeNormal = dot(v2-v1, normal);
                 double alpha = -v1normal / edgeNormal;
-                Vertex vNew = v1 + alpha*(v2-v1);
+                Point vNew = v1 + alpha*(v2-v1);
 
                 if(v1normal > epsilon)
                     (*edge)[0] = vNew;
@@ -232,8 +244,8 @@ void Polyhedron::clip(const Vector& point, const Vector& normal){
 
         assert(newEdge.size() == 0 || newEdge.size() == 2);
         if(newEdge.size() == 2){
-            Edge trueNewEdge = {newEdge[0], newEdge[1]};
-            if(length(trueNewEdge)>epsilon){
+            Line trueNewEdge = {newEdge[0], newEdge[1]};
+            if(trueNewEdge.length()>epsilon){
                 face->push_back(trueNewEdge);
                 newFace.push_back(trueNewEdge);
             }
@@ -254,7 +266,7 @@ void Polyhedron::clip(const Vector& point, const Vector& normal){
  * LOCAL HELPER FUNCTIONS
  *****************************************************************************/
 
-Edge otherEdge(const Face& face, const Edge& edge, const Vertex& vertex){
+Line otherEdge(const Polygon& face, const Line& edge, const Point& vertex){
 
     for(const auto& otherEdge : face){
         if(otherEdge != edge){
@@ -268,17 +280,18 @@ Edge otherEdge(const Face& face, const Edge& edge, const Vertex& vertex){
     return edge;
 }
 
-Vertex otherVertex(const Edge& edge, const Vertex& vertex){
+Point otherVertex(const Line& edge, const Point& vertex){
     return (vertex==edge[0] ? edge[1] : edge[0]);
 }
 
-vector<Vertex> faceVertices(const Face& face){
+vector<Point> Polygon::vertices() const {
 
-    vector<Vertex> vertices;
+    const Polygon& face = *this;
+    vector<Point> vertices;
 
-    Edge edge = *(face.begin());
-    Vertex vertex = edge[0];
-    Vertex start = vertex;
+    Line edge = *(face.begin());
+    Point vertex = edge[0];
+    Point start = vertex;
 
     do {
         vertices.push_back(vertex);
@@ -289,58 +302,63 @@ vector<Vertex> faceVertices(const Face& face){
     return vertices;
 }
 
-double length(const Edge& edge){
-    Vertex v = edge[1]-edge[0];
+double Line::length() const{
+    const Line& line = *this;
+    Point v = line[1]-line[0];
     double l = 0;
     for(const auto& c : v) l += c*c;
     return l;
 }
 
 /******************************************************************************
- * ARITHMETIC OPERATIONS (LOCAL)
+ * ARITHMETIC OPERATIONS
  *****************************************************************************/
 
-double dot(const Vector& a, const Vector& b){
+double dot(const Point& a, const Point& b){
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
-Vector cross(const Vector& a, const Vector& b){
-    Vertex res;
+Point cross(const Point& a, const Point& b){
+    Point res;
     res[0] = a[1]*b[2] - a[2]*b[1];
     res[1] = a[2]*b[0] - a[0]*b[2];
     res[2] = a[0]*b[1] - a[1]*b[0];
     return res;
 }
 
-Vector operator-(const Vector& lhs, const Vector& rhs){
-    Vertex res;
+Point operator-(const Point& lhs, const Point& rhs){
+    Point res;
     for(size_t i=0; i<lhs.size(); i++){
         res[i] = lhs[i] - rhs[i];
     }
     return res;
 }
 
-Vector operator+(const Vector& lhs, const Vector& rhs){
-    Vertex res;
+Point operator+(const Point& lhs, const Point& rhs){
+    Point res;
     for(size_t i=0; i<lhs.size(); i++){
         res[i] = lhs[i] + rhs[i];
     }
     return res;
 }
 
-Vector operator*(double lhs, const Vector& rhs){
-    Vertex res;
+Point operator*(double lhs, const Point& rhs){
+    Point res;
     for(size_t i=0; i<rhs.size(); i++){
         res[i] = lhs * rhs[i];
     }
     return res;
 }
 
+Point operator*(const Point& lhs, double rhs){
+    return rhs*lhs;
+}
+
 /******************************************************************************
- * PRINTING OPERATORS (LOCAL)
+ * PRINTING OPERATORS
  *****************************************************************************/
 
-ostream& operator<<(ostream& out, const Vertex& vertex){
+ostream& operator<<(ostream& out, const Point& vertex){
 
     auto it = vertex.begin();
     out << "(" << *it;
@@ -351,7 +369,7 @@ ostream& operator<<(ostream& out, const Vertex& vertex){
     return out << ")";
 }
 
-ostream& operator<<(ostream& out, const Edge& edge){
+ostream& operator<<(ostream& out, const Line& edge){
 
     auto it = edge.begin();
     out << *it;
@@ -362,7 +380,7 @@ ostream& operator<<(ostream& out, const Edge& edge){
     return out;
 }
 
-ostream& operator<<(ostream& out, const vector<Vertex>& edge){
+ostream& operator<<(ostream& out, const vector<Point>& edge){
 
     auto it = edge.begin();
     out << *it;
@@ -373,7 +391,7 @@ ostream& operator<<(ostream& out, const vector<Vertex>& edge){
     return out;
 }
 
-ostream& operator<<(ostream& out, const Face& face){
+ostream& operator<<(ostream& out, const Polygon& face){
 
     out << "Face: \n";
 
@@ -391,3 +409,5 @@ ostream& operator<<(ostream& out, const Polyhedron& polyhedron){
 
     return out;
 }
+
+} // namespace poly
