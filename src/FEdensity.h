@@ -48,9 +48,13 @@ public:
     vector<double> pittewayVolume() const;
     vector<Point> vertices;
     vector<Cell> cells;
+    int dim;
+private:
+    vector<double> pittewayVolume2() const;
+    vector<double> pittewayVolume3() const;
 };
 
-Mesh readGmsh(const string& filename);
-void writeVector(const string& filename, const vector<double>& vec);
+std::istream& readGmsh(std::istream& in, Mesh &mesh);
+std::ostream& writeVector(std::ostream& out, const vector<double>& vec);
 
 } // namspace fedensity

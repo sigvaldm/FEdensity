@@ -31,9 +31,10 @@ namespace fedensity {
 
 using std::cout;
 using poly::Point;
+using poly::Polygon;
 using poly::Polyhedron;
 
-vector<double> Mesh::pittewayVolume() const{
+vector<double> Mesh::pittewayVolume3() const{
 
     vector<double> volume(vertices.size());
 
@@ -53,11 +54,44 @@ vector<double> Mesh::pittewayVolume() const{
             }
 
             volume[cell.vertices[i]] += p.volume();
-
         }
     }
 
     return volume;
+}
+
+vector<double> Mesh::pittewayVolume2() const{
+
+    vector<double> volume(vertices.size());
+
+    for(const auto& cell : cells){
+        array<Point, 3> vs;
+        for(int i=0; i<3; i++) vs[i] = vertices[cell.vertices[i]];
+
+        for(int i=0; i<3; i++){ // for all vertices in cell
+            Polygon p(vs);
+
+            for(int j=0; j<3; j++){ // clip away other vertices
+                if(j!=i){
+                    Point point = 0.5*(vs[j]+vs[i]);
+                    Point normal = vs[j]-vs[i];
+                    point[2] = 0;
+                    normal[2] = 0;
+                    // cout << point << " " << normal << "\n";
+                    p.clip(point,normal);
+                }
+            }
+            // cout << p << "\n";
+
+            volume[cell.vertices[i]] += p.area();
+        }
+    }
+
+    return volume;
+}
+
+vector<double> Mesh::pittewayVolume() const{
+    return (dim==3) ? pittewayVolume3() : pittewayVolume2();
 }
 
 } // namespace fedensity

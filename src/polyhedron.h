@@ -64,6 +64,7 @@ public:
     Point(double x);                       ///< 1D initialization
     Point(double x, double y);             ///< 2D initialization
     Point(double x, double y, double z);   ///< 3D initialization
+    double length() const;          ///< Euclidean length
 };
 
 /**
@@ -103,11 +104,21 @@ public:
     /// Uninitialized Polygon
     Polygon(){}
 
+    /**
+     * @brief Initialize triangle.
+     * @param   vertices    The three vertices of the triangle.
+     */
+    Polygon(const std::array<Point, 3>& vertices);
+
     /// Polygon with specified lines
     Polygon(const std::initializer_list<Line>& v) : vector<Line>(v) {}
 
     /// Return vertices in polygon
     std::vector<Point> vertices() const;
+
+    double area() const;
+
+    void clip(const Point& point, const Point& normal);
 };
 ///@}
 

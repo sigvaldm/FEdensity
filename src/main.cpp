@@ -24,26 +24,45 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <cmath>
 #include <ctime>
 #include <numeric>
 #include "FEdensity.h"
 #include "polyhedron.h"
 using std::cout;
+using std::cerr;
 using std::vector;
+using std::string;
 using fedensity::readGmsh;
 using fedensity::writeVector;
 using fedensity::Mesh;
+using poly::Point;
 
-int main(){
+#include <array>
+
+int main(int argc, char *argv[]){
+
     cout << "FEdensity " << VERSION << " running.\n";
 
+    if(argc != 3){
+        cerr << "Wrong syntax. Example: \"./fedensity input.msh output.txt\"\n";
+        return 1;
+    }
 
-    Mesh mesh = readGmsh("mesh/regular1.msh");
+    std::ifstream infile(argv[1]);
+    std::ofstream outfile(argv[2], std::ofstream::out);
+
+    Mesh mesh;
+    readGmsh(infile, mesh);
+
     vector<double> volume = mesh.pittewayVolume();
     double totalVolume = std::accumulate(volume.begin(), volume.end(), 0.0f);
-    cout << totalVolume << "\n";
-    writeVector("volume.txt",volume);
+    cout << "Total volume: " << totalVolume << "\n";
+
+    // outfile << std::hexfloat;
+    writeVector(outfile, volume);
+
 
 
     cout << "FEdensity " << VERSION << " ended successfully.\n";
