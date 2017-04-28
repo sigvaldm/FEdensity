@@ -34,6 +34,9 @@
 
 namespace poly {
 
+using std::vector;
+using std::array;
+
 constexpr double epsilon = 1e-10;
 
 /******************************************************************************
@@ -358,7 +361,7 @@ Point operator*(const Point& lhs, double rhs){
  * PRINTING OPERATORS
  *****************************************************************************/
 
-ostream& operator<<(ostream& out, const Point& vertex){
+std::ostream& operator<<(std::ostream& out, const Point& vertex){
 
     auto it = vertex.begin();
     out << "(" << *it;
@@ -369,7 +372,7 @@ ostream& operator<<(ostream& out, const Point& vertex){
     return out << ")";
 }
 
-ostream& operator<<(ostream& out, const Line& edge){
+std::ostream& operator<<(std::ostream& out, const Line& edge){
 
     auto it = edge.begin();
     out << *it;
@@ -380,7 +383,7 @@ ostream& operator<<(ostream& out, const Line& edge){
     return out;
 }
 
-ostream& operator<<(ostream& out, const vector<Point>& edge){
+std::ostream& operator<<(std::ostream& out, const std::vector<Point>& edge){
 
     auto it = edge.begin();
     out << *it;
@@ -391,7 +394,7 @@ ostream& operator<<(ostream& out, const vector<Point>& edge){
     return out;
 }
 
-ostream& operator<<(ostream& out, const Polygon& face){
+std::ostream& operator<<(std::ostream& out, const Polygon& face){
 
     out << "Face: \n";
 
@@ -401,7 +404,7 @@ ostream& operator<<(ostream& out, const Polygon& face){
     return out;
 }
 
-ostream& operator<<(ostream& out, const Polyhedron& polyhedron){
+std::ostream& operator<<(std::ostream& out, const Polyhedron& polyhedron){
     out << "Polyhedron: \n\n";
     for(auto const& face : polyhedron){
         out << face << "\n";

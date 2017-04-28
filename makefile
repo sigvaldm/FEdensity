@@ -26,7 +26,7 @@ CADD    =
 
 EXEC = fedensity
 
-CFLAGS = -std=c++17 -Wall $(CADD)
+CFLAGS = -std=c++17 -Wall -fPIC $(CADD)
 
 SDIR	= src
 ODIR	= src/obj
@@ -42,12 +42,15 @@ HEAD	= $(patsubst %,$(HDIR)/%,$(HEAD_))
 SRC		= $(patsubst %,$(SDIR)/%,$(SRC_))
 OBJ		= $(patsubst %,$(ODIR)/%,$(OBJ_))
 
-all: version $(EXEC) doc
+all: version $(EXEC) $(EXEC) doc
 
 $(EXEC): $(ODIR)/main.o $(OBJ)
-	@echo "Linking FEdensity"
+	@echo "Linking FEdensity CLI tool"
 	@$(CC) $^ -o $@ $(CFLAGS)
-	@echo "FEdensity is built"
+
+$(EXEC).so: $(OBJ)
+	@echo "Linking FEdensity library"
+	@$(CC) $(OBJ) -shared -o $(EXEC).so
 
 $(ODIR)/%.o: $(SDIR)/%.cpp $(HEAD)
 	@echo "Compiling $<"

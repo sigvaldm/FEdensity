@@ -30,42 +30,20 @@
 #include "FEdensity.h"
 #include "polyhedron.h"
 using std::cout;
-using std::endl;
-using poly::Polyhedron;
-using poly::Point;
+using std::vector;
+using fedensity::readGmsh;
+using fedensity::writeVector;
+using fedensity::Mesh;
 
 int main(){
     cout << "FEdensity " << VERSION << " running.\n";
 
 
-    // std::array<Point, 4> arr {Point(0,0,0),Point(1,0,0),Point(0,1,0),Point(0,0,1)};
-    // Polyhedron p(arr);
-    // // p.cube({0,0,0},{1,1,1});
-    // p.clip({0.5,0,0},{0.5,0,0});
-    // p.clip({0,0.5,0},{0,0.5,0});
-    // p.clip({0,0,0.5},{0,0,0.5});
-    // cout << p;
-    // cout << p.volume() << "\n";
-
-    // Polyhedron p;
-    // p.cube({-1,-1,-1},{1,1,1});
-    // clock_t t = clock();
-    // for(int theta = 0; theta<360; theta++){
-    //     double theta_rad = theta * 3.1415926535 / 180.0;
-    //     double x = cos(theta_rad);
-    //     double y = sin(theta_rad);
-    //     p.clip({x,y,0},{x,y,0});
-    // }
-    // cout << "Cutting: " << 1000.0*(clock()-t)/CLOCKS_PER_SEC << "ms" << endl;
-    // t = clock();
-    // cout << p.volume() << "\n";
-    // cout << "Volume: " << 1000.0*(clock()-t)/CLOCKS_PER_SEC << "ms" << endl;
-
-    Mesh mesh = readGmsh("mesh/sphere.msh");
+    Mesh mesh = readGmsh("mesh/regular1.msh");
     vector<double> volume = mesh.pittewayVolume();
     double totalVolume = std::accumulate(volume.begin(), volume.end(), 0.0f);
     cout << totalVolume << "\n";
-
+    writeVector("volume.txt",volume);
 
 
     cout << "FEdensity " << VERSION << " ended successfully.\n";

@@ -24,6 +24,12 @@
  */
 
 #include "FEdensity.h"
+
+#include <iostream>
+
+namespace fedensity {
+
+using std::cout;
 using poly::Point;
 using poly::Polyhedron;
 
@@ -35,21 +41,23 @@ vector<double> Mesh::pittewayVolume() const{
         array<Point, nDims+1> vs;
         for(int i=0; i<nDims+1; i++) vs[i] = vertices[cell.vertices[i]];
 
-        for(int i=0; i<nDims+1; i++){
+        for(int i=0; i<nDims+1; i++){ // for all vertices in cell
             Polyhedron p(vs);
 
-            for(int j=0; j<nDims+1; j++){
+            for(int j=0; j<nDims+1; j++){ // clip away other vertices
                 if(j!=i){
-                    Point point = 0.5*(vertices[j]+vertices[i]);
-                    Point normal = vertices[j]-vertices[i];
+                    Point point = 0.5*(vs[j]+vs[i]);
+                    Point normal = vs[j]-vs[i];
                     p.clip(point,normal);
                 }
             }
 
-            volume[i] += p.volume();
+            volume[cell.vertices[i]] += p.volume();
 
         }
     }
 
     return volume;
 }
+
+} // namespace fedensity

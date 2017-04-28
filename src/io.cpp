@@ -24,16 +24,20 @@
  */
 
 #include <iostream>
+#include <ios>
 #include <fstream>
 #include <string>
 #include <cassert>
 #include "FEdensity.h"
 using std::ifstream;
+using std::ofstream;
 using std::getline;
 using std::string;
 using std::istringstream;
 
 using std::cout;
+
+namespace fedensity {
 
 Mesh readGmsh(const string& filename){
 
@@ -88,3 +92,14 @@ Mesh readGmsh(const string& filename){
     return mesh;
 
 }
+
+void writeVector(const string& filename, const vector<double>& vec){
+
+    ofstream outfile(filename);
+    // outfile << std::hexfloat;
+    for(const auto& elem : vec){
+        outfile << elem << "\n";
+    }
+}
+
+} // namespace fedensity

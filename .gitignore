@@ -9,3 +9,7 @@ doc/latex
 **.synctex.gz
 doc/note/main.pdf
 src/version.h
+**.so
+swig/**.py
+swig/**.cxx
+volume.txt

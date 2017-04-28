@@ -32,16 +32,11 @@
 #include <vector>
 #include <array>
 #include <initializer_list>
+#include <iostream>
 
 namespace poly {
 
-using std::initializer_list;
-using std::ostream;
-using std::istream;
-using std::vector;
-using std::array;
-
-/// Number of geometric dimensions.
+/// Maximum number of geometric dimensions.
 constexpr int nDims = 3;
 
 /**
@@ -63,7 +58,7 @@ constexpr int nDims = 3;
  *  2. We like to add special operators/functions for this type only.
  *  3. For consistency with the Polyhedron type.
  */
-class Point : public array<double, nDims> {
+class Point : public std::array<double, nDims> {
 public:
     Point(){}                              ///< Uninitialized
     Point(double x);                       ///< 1D initialization
@@ -91,7 +86,7 @@ Point operator*(const Point& lhs, double rhs); ///< Multiplication by scalar
  *
  * NB: See Point for discussion of inherting from STL.
  */
-class Line : public array<Point, 2> {
+class Line : public std::array<Point, 2> {
 public:
     Line(){}                                ///< Uninitialized
     Line(const Point& a, const Point& b);   ///< Initialized by end-points
@@ -103,16 +98,16 @@ public:
  *
  * NB: See Point for discussion of inherting from STL.
  */
-class Polygon : public vector<Line> {
+class Polygon : public std::vector<Line> {
 public:
-    /// Uninitialized polygon
+    /// Uninitialized Polygon
     Polygon(){}
 
     /// Polygon with specified lines
-    Polygon(const initializer_list<Line>& v) : vector<Line>(v) {}
+    Polygon(const std::initializer_list<Line>& v) : vector<Line>(v) {}
 
     /// Return vertices in polygon
-    vector<Point> vertices() const;
+    std::vector<Point> vertices() const;
 };
 ///@}
 
@@ -121,16 +116,17 @@ public:
  *
  * NB: See Point for discussion of inherting from STL.
  */
-class Polyhedron : public vector<Polygon> {
+class Polyhedron : public std::vector<Polygon> {
 public:
 
+    /// Uninitialized Polyhedron
     Polyhedron(){}
 
     /**
      * @brief Initialize tetrahedron.
      * @param   vertices    The four vertices of the tetrahedron.
      */
-    Polyhedron(const array<Point, nDims+1>& vertices);
+    Polyhedron(const std::array<Point, nDims+1>& vertices);
 
     /**
      * @brief Initialize cube/box.
@@ -164,12 +160,14 @@ public:
  * Overloading "put-to" operators for convenient printing.
  */
 ///@{
-ostream& operator<<(ostream& out, const Point& vertex);
-ostream& operator<<(ostream& out, const Line& edge);
-ostream& operator<<(ostream& out, const vector<Point>& edge);
-ostream& operator<<(ostream& out, const Polygon& face);
-ostream& operator<<(ostream& out, const Polyhedron& polyhedron);
+std::ostream& operator<<(std::ostream& out, const Point& vertex);
+std::ostream& operator<<(std::ostream& out, const Line& edge);
+std::ostream& operator<<(std::ostream& out, const std::vector<Point>& edge);
+std::ostream& operator<<(std::ostream& out, const Polygon& face);
+std::ostream& operator<<(std::ostream& out, const Polyhedron& polyhedron);
 ///@}
+
+void test();
 
 } // namespace poly
 

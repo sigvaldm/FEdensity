@@ -28,6 +28,9 @@
 #include <string>
 #include "version.h"
 #include "polyhedron.h"
+
+namespace fedensity {
+
 using std::vector;
 using std::array;
 using std::string;
@@ -48,4 +51,6 @@ public:
 };
 
 Mesh readGmsh(const string& filename);
-;
+void writeVector(const string& filename, const vector<double>& vec);
+
+} // namspace fedensity
