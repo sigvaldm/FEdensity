@@ -37,8 +37,6 @@ namespace poly {
 using std::vector;
 using std::array;
 
-constexpr double epsilon = 1e-10;
-
 /******************************************************************************
  * LOCAL FUNCTION DECLARATIONS
  *****************************************************************************/
@@ -468,53 +466,53 @@ Point operator*(const Point& lhs, double rhs){
  * PRINTING OPERATORS
  *****************************************************************************/
 
-std::ostream& operator<<(std::ostream& out, const Point& vertex){
+std::ostream& operator<<(std::ostream& out, const Point& point){
 
-    auto it = vertex.begin();
+    auto it = point.begin();
     out << "(" << *it;
 
-    for(it++; it != vertex.end(); it++){
+    for(it++; it != point.end(); it++){
         out << "," << *it;
     }
     return out << ")";
 }
 
-std::ostream& operator<<(std::ostream& out, const Line& edge){
+std::ostream& operator<<(std::ostream& out, const Line& line){
 
-    auto it = edge.begin();
+    auto it = line.begin();
     out << *it;
 
-    for(it++; it != edge.end(); it++){
+    for(it++; it != line.end(); it++){
         out << " - " << *it;
     }
     return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const std::vector<Point>& edge){
+std::ostream& operator<<(std::ostream& out, const std::vector<Point>& points){
 
-    auto it = edge.begin();
+    auto it = points.begin();
     out << *it;
 
-    for(it++; it != edge.end(); it++){
+    for(it++; it != points.end(); it++){
         out << ", " << *it;
     }
     return out;
 }
 
-std::ostream& operator<<(std::ostream& out, const Polygon& face){
+std::ostream& operator<<(std::ostream& out, const Polygon& polygon){
 
-    out << "Face: \n";
+    out << "Polygon: \n";
 
-    for(auto const& edge : face){
-        out << "  " << edge << "\n";
+    for(auto const& line : polygon){
+        out << "  " << line << "\n";
     }
     return out;
 }
 
 std::ostream& operator<<(std::ostream& out, const Polyhedron& polyhedron){
     out << "Polyhedron: \n\n";
-    for(auto const& face : polyhedron){
-        out << face << "\n";
+    for(auto const& polygon : polyhedron){
+        out << polygon << "\n";
     }
 
     return out;

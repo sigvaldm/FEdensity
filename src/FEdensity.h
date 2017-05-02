@@ -25,36 +25,44 @@
 
 #include <vector>
 #include <array>
+#include <set>
 #include <string>
 #include "version.h"
 #include "polyhedron.h"
 
 namespace fedensity {
 
-using std::vector;
-using std::array;
-using std::string;
-using poly::Point;
-using poly::nDims;
+using PointArray = std::array<poly::Point, poly::nDims+1>;
 
+// Cell could probably benefit from having a virtual base class
 class Cell {
 public:
-    array<int, nDims+1> vertices;
-    // array<Cell*, nDims+1> neighbors;
+    using IdArray = std::array<int, poly::nDims+1>;
+    using IdSet = std::set<int>;
+    IdArray vertices;
+    IdArray neighbors;
+    IdSet influencers; // List of influencing vertices
 };
 
 class Mesh {
 public:
-    vector<double> pittewayVolume() const;
-    vector<Point> vertices;
-    vector<Cell> cells;
-    int dim;
+    size_t dim;
+    std::vector<poly::Point> vertices;
+    std::vector<Cell> cells;
+    std::vector<double> pittewayVolume() const;
+    poly::Point cellCircumcenter(int index) const;
+    void computeInfluencers();
+    PointArray cell(int index) const;
+    PointArray facetNormals(int index) const;
+    void propagate(const poly::Point& center, const Cell& first, int cellIndex);
 private:
-    vector<double> pittewayVolume2() const;
-    vector<double> pittewayVolume3() const;
+    std::vector<double> pittewayVolume2() const;
+    std::vector<double> pittewayVolume3() const;
 };
 
 std::istream& readGmsh(std::istream& in, Mesh &mesh);
-std::ostream& writeVector(std::ostream& out, const vector<double>& vec);
+std::istream& readFE(std::istream& in, Mesh &mesh);
+std::ostream& writeVector(std::ostream& out, const std::vector<double>& vec);
+std::ostream& operator<<(std::ostream& out, const Cell& cell);
 
 } // namspace fedensity

@@ -34,6 +34,8 @@ using std::ofstream;
 using std::getline;
 using std::string;
 using std::istringstream;
+using std::vector;
+using poly::Point;
 
 using std::cout;
 using std::cerr;
@@ -88,6 +90,71 @@ std::istream& readGmsh(std::istream& in, Mesh &mesh){
             in >> v1 >> v2 >> v3;
             cell.vertices = {v1-1, v2-1, v3-1};
             mesh.dim = 2;
+        } else {
+            cerr << "Only supports triangular or tetrahedral elements.\n";
+            exit(1);
+        }
+
+        mesh.cells.push_back(cell);
+
+    }
+
+    return in;
+}
+
+std::istream& readFE(std::istream& in, Mesh &mesh){
+
+    // The resize in this function has a very small (~10 ms) performance
+    // penalty because STL containers are value-initialized. How to circumvent
+    // this can found here: http://stackoverflow.com/a/21028912/273767
+
+    string line;
+
+    while(in >> line) if(line=="Dimensions") break;
+    int dim;
+    in >> dim;
+    mesh.dim = dim;
+
+    while(in >> line) if(line=="Neighbors") break;
+    bool neighbors;
+    in >> neighbors;
+
+    while(in >> line) if(line=="Nodes") break;
+    int nNodes;
+    in >> nNodes;
+    mesh.vertices.resize(nNodes);
+
+    int id;
+    double x, y, z;
+    for(int i=0; i<nNodes; i++){
+        in >> id >> x >> y >> z;
+        mesh.vertices[id-1] = Point(x,y,z);
+    }
+
+    while(in >> line) if(line=="Elements") break;
+    int nCells;
+    in >> nCells;
+    mesh.cells.reserve(nCells);
+
+    int v1, v2, v3, v4;
+    for(int i=0; i<nCells; i++){
+
+        Cell cell;
+
+        if(dim==3){ // Tetrahedron
+            in >> id >> v1 >> v2 >> v3 >> v4;
+            cell.vertices = {v1-1, v2-1, v3-1, v4-1};
+            if(neighbors){
+                in >> v1 >> v2 >> v3 >> v4;
+                cell.neighbors = {v1-1, v2-1, v3-1, v4-1};
+            }
+        } else if(dim==2){ // Triangle
+            in >> id >> v1 >> v2 >> v3;
+            cell.vertices = {v1-1, v2-1, v3-1};
+            if(neighbors){
+                in >> v1 >> v2 >> v3;
+                cell.neighbors = {v1-1, v2-1, v3-1};
+            }
         } else {
             cerr << "Only supports triangular or tetrahedral elements.\n";
             exit(1);

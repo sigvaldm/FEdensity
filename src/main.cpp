@@ -50,11 +50,30 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    std::ifstream infile(argv[1]);
-    std::ofstream outfile(argv[2], std::ofstream::out);
+    string ifname = argv[1];
+    string ofname = argv[2];
+    string ifext = ifname.substr(ifname.find_last_of(".")+1);
+
+    std::ifstream infile(ifname);
+    std::ofstream outfile(ofname, std::ofstream::out);
 
     Mesh mesh;
-    readGmsh(infile, mesh);
+
+    if(ifext=="msh")
+        readGmsh(infile, mesh);
+    else if(ifext=="fe")
+        readFE(infile, mesh);
+    else {
+        cerr << "File extension " << ifext << " not supported\n";
+        return 1;
+    }
+
+    // cout << "Center 0: " << mesh.cellCircumcenter(0) << "\n";
+    // cout << "Center 1: " << mesh.cellCircumcenter(1) << "\n";
+    // cout << "Center 2: " << mesh.cellCircumcenter(2) << "\n";
+
+    mesh.computeInfluencers();
+    cout << mesh.cells[3];
 
     vector<double> volume = mesh.pittewayVolume();
     double totalVolume = std::accumulate(volume.begin(), volume.end(), 0.0f);

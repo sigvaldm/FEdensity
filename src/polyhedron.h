@@ -39,6 +39,8 @@ namespace poly {
 /// Maximum number of geometric dimensions.
 constexpr int nDims = 3;
 
+constexpr double epsilon = 1e-10;
+
 /**
  * @brief A cartesian point or geometric (not algebraic) vector.
  *

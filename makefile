@@ -24,9 +24,9 @@ CC		= g++
 COPT	= -O3
 CADD    =
 
-EXEC = fedensity
+EXEC    = fedensity
 
-CFLAGS = -std=c++17 -Wall -fPIC $(CADD)
+CFLAGS  = -std=c++17 -Wall -fPIC $(CADD)
 
 SDIR	= src
 ODIR	= src/obj
