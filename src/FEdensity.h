@@ -50,14 +50,18 @@ public:
     std::vector<poly::Point> vertices;
     std::vector<Cell> cells;
     std::vector<double> pittewayVolume() const;
+    std::vector<double> volume() const;
     poly::Point cellCircumcenter(int index) const;
     void computeInfluencers();
     PointArray cell(int index) const;
     PointArray facetNormals(int index) const;
     void propagate(const poly::Point& center, const Cell& first, int cellIndex);
+    void findNeighbors(const std::vector<std::vector<int>>& belongsTo);
 private:
     std::vector<double> pittewayVolume2() const;
     std::vector<double> pittewayVolume3() const;
+    std::vector<double> volume2() const;
+    std::vector<double> volume3() const;
 };
 
 std::istream& readGmsh(std::istream& in, Mesh &mesh);

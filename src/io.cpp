@@ -28,6 +28,7 @@
 #include <fstream>
 #include <string>
 #include <cassert>
+#include <algorithm>
 #include "FEdensity.h"
 using std::ifstream;
 using std::ofstream;
@@ -50,10 +51,7 @@ std::istream& readGmsh(std::istream& in, Mesh &mesh){
 
     string line;
 
-    while(in >> line){
-        if(line=="$Nodes") break;
-    }
-
+    while(in >> line) if(line=="$Nodes") break;
     int nNodes;
     in >> nNodes;
     mesh.vertices.resize(nNodes);
@@ -65,13 +63,13 @@ std::istream& readGmsh(std::istream& in, Mesh &mesh){
         mesh.vertices[id-1] = Point(x,y,z);
     }
 
-    while(in >> line){
-        if(line=="$Elements") break;
-    }
-
+    while(in >> line) if(line=="$Elements") break;
     int nCells;
     in >> nCells;
     mesh.cells.reserve(nCells);
+
+    vector<vector<int>> belongsTo;
+    belongsTo.resize(nNodes);
 
     int type, nTags, garbage;
     int v1, v2, v3, v4;
@@ -86,10 +84,17 @@ std::istream& readGmsh(std::istream& in, Mesh &mesh){
             in >> v1 >> v2 >> v3 >> v4;
             cell.vertices = {v1-1, v2-1, v3-1, v4-1};
             mesh.dim = 3;
+            belongsTo[v1-1].push_back(i);
+            belongsTo[v2-1].push_back(i);
+            belongsTo[v3-1].push_back(i);
+            belongsTo[v4-1].push_back(i);
         } else if(type==2){ // Triangle
             in >> v1 >> v2 >> v3;
             cell.vertices = {v1-1, v2-1, v3-1};
             mesh.dim = 2;
+            belongsTo[v1-1].push_back(i);
+            belongsTo[v2-1].push_back(i);
+            belongsTo[v3-1].push_back(i);
         } else {
             cerr << "Only supports triangular or tetrahedral elements.\n";
             exit(1);
@@ -98,6 +103,8 @@ std::istream& readGmsh(std::istream& in, Mesh &mesh){
         mesh.cells.push_back(cell);
 
     }
+
+    mesh.findNeighbors(belongsTo);
 
     return in;
 }
@@ -136,6 +143,9 @@ std::istream& readFE(std::istream& in, Mesh &mesh){
     in >> nCells;
     mesh.cells.reserve(nCells);
 
+    vector<vector<int>> belongsTo;
+    if(!neighbors) belongsTo.resize(nNodes);
+
     int v1, v2, v3, v4;
     for(int i=0; i<nCells; i++){
 
@@ -147,6 +157,11 @@ std::istream& readFE(std::istream& in, Mesh &mesh){
             if(neighbors){
                 in >> v1 >> v2 >> v3 >> v4;
                 cell.neighbors = {v1-1, v2-1, v3-1, v4-1};
+            } else {
+                belongsTo[v1-1].push_back(i);
+                belongsTo[v2-1].push_back(i);
+                belongsTo[v3-1].push_back(i);
+                belongsTo[v4-1].push_back(i);
             }
         } else if(dim==2){ // Triangle
             in >> id >> v1 >> v2 >> v3;
@@ -154,6 +169,10 @@ std::istream& readFE(std::istream& in, Mesh &mesh){
             if(neighbors){
                 in >> v1 >> v2 >> v3;
                 cell.neighbors = {v1-1, v2-1, v3-1};
+            } else {
+                belongsTo[v1-1].push_back(i);
+                belongsTo[v2-1].push_back(i);
+                belongsTo[v3-1].push_back(i);
             }
         } else {
             cerr << "Only supports triangular or tetrahedral elements.\n";
@@ -164,7 +183,71 @@ std::istream& readFE(std::istream& in, Mesh &mesh){
 
     }
 
+    if(!neighbors) mesh.findNeighbors(belongsTo);
+
     return in;
+}
+
+void Mesh::findNeighbors(const std::vector<std::vector<int>>& belongsTo){
+
+    int nCells = cells.size();
+    for(int c=0; c<nCells; ++c){
+        Cell& cell = cells[c];
+
+        for(size_t i=0; i<dim+1; ++i){
+
+            // facet opposite of vertex i
+            int j = (i+1)%(dim+1);
+            int k = (i+2)%(dim+1);
+
+            int vj = cell.vertices[j];
+            int vk = cell.vertices[k];
+
+            vector<int> candidates = belongsTo[vj];
+
+            // Remove self
+            auto it = std::find(candidates.begin(), candidates.end(), c);
+            candidates.erase(it);
+
+            // Remove candidates not containing vk
+            for(auto it = candidates.begin(); it != candidates.end();){
+                const Cell& candidate = cells[*it];
+
+                bool found = false;
+                for(size_t d=0; d<dim+1; ++d)
+                    if(candidate.vertices[d] == vk) found = true;
+
+                if(found) ++it;
+                else it = candidates.erase(it);
+            }
+
+            if(dim==3){
+                int l = (i+3)%(dim+1);
+                int vl = cell.vertices[l];
+
+                // Remove candidates not containing vl
+                for(auto it = candidates.begin(); it != candidates.end();){
+                    const Cell& candidate = cells[*it];
+
+                    bool found = false;
+                    for(size_t d=0; d<dim+1; ++d)
+                        if(candidate.vertices[d] == vl) found = true;
+
+                    if(found) ++it;
+                    else it = candidates.erase(it);
+                }
+            }
+
+            assert(candidates.size()<=1);
+
+            if(candidates.size()==1)
+                cell.neighbors[i] = candidates[0];
+            else
+                cell.neighbors[i] = -1;
+
+        }
+
+    }
 }
 
 std::ostream& writeVector(std::ostream& out, const vector<double>& vec){

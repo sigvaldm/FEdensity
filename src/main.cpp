@@ -68,14 +68,14 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    // cout << "Center 0: " << mesh.cellCircumcenter(0) << "\n";
-    // cout << "Center 1: " << mesh.cellCircumcenter(1) << "\n";
-    // cout << "Center 2: " << mesh.cellCircumcenter(2) << "\n";
+    cout << mesh.cells[0] << "\n";
+    cout << mesh.cells[1] << "\n";
+    cout << mesh.cells[2] << "\n";
 
     mesh.computeInfluencers();
-    cout << mesh.cells[3];
 
-    vector<double> volume = mesh.pittewayVolume();
+    // vector<double> volume = mesh.pittewayVolume();
+    vector<double> volume = mesh.volume();
     double totalVolume = std::accumulate(volume.begin(), volume.end(), 0.0f);
     cout << "Total volume: " << totalVolume << "\n";
 

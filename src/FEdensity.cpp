@@ -38,6 +38,77 @@ using poly::nDims;
 
 using std::string;
 
+vector<double> Mesh::volume3() const{
+
+    using IdSet = Cell::IdSet;
+
+    vector<double> volume(vertices.size());
+
+    for(const auto& c : cells){
+
+        PointArray vs;
+        for(int i=0; i<nDims+1; i++) vs[i] = vertices[c.vertices[i]];
+
+        const IdSet& influencers = c.influencers;
+
+        for(const auto& i : influencers){
+            poly::Polyhedron p(vs);
+
+            for(const auto& j : influencers){
+                if(j!=i){
+                    Point point = 0.5*(vertices[j]+vertices[i]);
+                    Point normal = vertices[j]-vertices[i];
+                    p.clip(point, normal);
+                }
+            }
+
+            volume[i] += p.volume();
+        }
+    }
+
+    return volume;
+}
+
+vector<double> Mesh::volume2() const{
+
+    using IdSet = Cell::IdSet;
+
+    vector<double> volume(vertices.size());
+
+    for(const auto& c : cells){
+
+        std::array<Point, 3> vs;
+        for(int i=0; i<3; i++) vs[i] = vertices[c.vertices[i]];
+
+        const IdSet& influencers = c.influencers;
+
+        for(const auto& i : influencers){
+            poly::Polygon p(vs);
+
+            for(const auto& j : influencers){
+                if(j!=i){
+                    Point point = 0.5*(vertices[j]+vertices[i]);
+                    Point normal = vertices[j]-vertices[i];
+
+                    // TBD: Why are these necessary?
+                    point[2] = 0;
+                    normal[2] = 0;
+
+                    p.clip(point, normal);
+                }
+            }
+
+            volume[i] += p.area();
+        }
+    }
+
+    return volume;
+}
+
+vector<double> Mesh::volume() const{
+    return (dim==3) ? volume3() : volume2();
+}
+
 vector<double> Mesh::pittewayVolume3() const{
 
     vector<double> volume(vertices.size());
