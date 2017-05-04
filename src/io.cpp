@@ -24,6 +24,7 @@
  */
 
 #include <iostream>
+#include <sstream>
 #include <ios>
 #include <fstream>
 #include <string>
@@ -50,60 +51,82 @@ std::istream& readGmsh(std::istream& in, Mesh &mesh){
     // this can found here: http://stackoverflow.com/a/21028912/273767
 
     string line;
+    std::istringstream ins;
 
-    while(in >> line) if(line=="$Nodes") break;
+    while(getline(in, line)) if(line=="$Nodes") break;
     int nNodes;
-    in >> nNodes;
+    getline(in, line);
+    ins = std::istringstream(line);
+    ins >> nNodes;
     mesh.vertices.resize(nNodes);
 
     int id;
     double x, y, z;
     for(int i=0; i<nNodes; i++){
-        in >> id >> x >> y >> z;
+        getline(in, line);
+        ins = std::istringstream(line);
+        ins >> id >> x >> y >> z;
+        // in >> id >> x >> y >> z;
         mesh.vertices[id-1] = Point(x,y,z);
     }
 
-    while(in >> line) if(line=="$Elements") break;
+    while(getline(in, line)) if(line=="$Elements") break;
     int nCells;
-    in >> nCells;
+    getline(in, line);
+    ins = std::istringstream(line);
+    ins >> nCells;
     mesh.cells.reserve(nCells);
 
     vector<vector<int>> belongsTo;
     belongsTo.resize(nNodes);
 
+    int dim = 2; // changes to 3 upon detection of tetrahedron
+
     int type, nTags, garbage;
     int v1, v2, v3, v4;
-    for(int i=0; i<nCells; i++){
+    // int ctr=0;
+    for(int i=0; i<nCells; ++i){
 
-        in >> id >> type >> nTags;
-        for(int n=0; n<nTags; n++) in >> garbage;
+        getline(in, line);
+        ins = std::istringstream(line);
 
-        Cell cell;
+        ins >> id >> type >> nTags;
+        // assert(++ctr==id);
+        for(int n=0; n<nTags; ++n) ins >> garbage;
 
-        if(type==4){ // Tetrahedron
-            in >> v1 >> v2 >> v3 >> v4;
-            cell.vertices = {v1-1, v2-1, v3-1, v4-1};
-            mesh.dim = 3;
-            belongsTo[v1-1].push_back(i);
-            belongsTo[v2-1].push_back(i);
-            belongsTo[v3-1].push_back(i);
-            belongsTo[v4-1].push_back(i);
-        } else if(type==2){ // Triangle
-            in >> v1 >> v2 >> v3;
-            cell.vertices = {v1-1, v2-1, v3-1};
-            mesh.dim = 2;
-            belongsTo[v1-1].push_back(i);
-            belongsTo[v2-1].push_back(i);
-            belongsTo[v3-1].push_back(i);
-        } else {
-            cerr << "Only supports triangular or tetrahedral elements.\n";
-            exit(1);
+        if(dim==2 && type==4){ // turns out to be 3D
+            dim = 3;
+
+            // if any triangles are fetched they must be thrown away
+            mesh.cells.clear();
+            belongsTo.clear();
+            belongsTo.resize(nNodes);
         }
 
-        mesh.cells.push_back(cell);
+        if(type==4 && dim==3){ // Tetrahedron
+            ins >> v1 >> v2 >> v3 >> v4;
+            Cell cell;
+            cell.vertices = {v1-1, v2-1, v3-1, v4-1};
+            mesh.cells.push_back(cell);
+            int index = mesh.cells.size()-1;
+            belongsTo[v1-1].push_back(index);
+            belongsTo[v2-1].push_back(index);
+            belongsTo[v3-1].push_back(index);
+            belongsTo[v4-1].push_back(index);
+        } else if(type==2 && dim==2){ // Triangle
+            ins >> v1 >> v2 >> v3;
+            Cell cell;
+            cell.vertices = {v1-1, v2-1, v3-1};
+            mesh.cells.push_back(cell);
+            int index = mesh.cells.size()-1;
+            belongsTo[v1-1].push_back(index);
+            belongsTo[v2-1].push_back(index);
+            belongsTo[v3-1].push_back(index);
+        }
 
     }
 
+    mesh.dim = dim;
     mesh.findNeighbors(belongsTo);
 
     return in;
