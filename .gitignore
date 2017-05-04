@@ -13,3 +13,6 @@ src/version.h
 swig/**.py
 swig/**.cxx
 volume.txt
+analysis.txt
+gmon.out
+test/cache/**

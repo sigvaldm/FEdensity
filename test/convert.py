@@ -50,7 +50,16 @@ def readVolume(fInName):
 def eq(a, b, tol):
     return all(np.abs(np.array(a)-np.array(b))<tol)
 
-def generateMesh(fName, sz):
-    cmd = "gmsh -setnumber sz %f -3 "%sz
-    cmd += os.path.join(os.path.dirname(os.path.realpath(__file__)),fName)
-    sp.call(cmd, shell=True)
+def generateMesh(fName, sz, cached=True):
+    pathOfThisFile = os.path.dirname(os.path.realpath(__file__))
+    cachePath = os.path.join(pathOfThisFile, "cache")
+
+    fOutName = os.path.join(cachePath, "%e.msh"%sz)
+
+    if (not os.path.isfile(fOutName)) or cached==False:
+        cmd = "gmsh -setnumber sz %e"%sz
+        cmd += " -o %s"%fOutName
+        cmd += " -3 %s"%os.path.join(pathOfThisFile, fName)
+        sp.call(cmd, shell=True)
+
+    return fOutName
