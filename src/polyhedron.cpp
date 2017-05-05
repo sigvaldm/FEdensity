@@ -188,9 +188,18 @@ void Polygon::clip(const Point& point, const Point& normal){
         } else {
             // edge intersects plane.
 
-            double edgeNormal = dot(v2-v1, normal);
+
+            // double edgeNormal = dot(v2-v1, normal);
+            // double alpha = -v1normal / edgeNormal;
+            // Point vNew = v1 + alpha*(v2-v1);
+
+            v2-=v1;
+            double edgeNormal = dot(v2, normal);
             double alpha = -v1normal / edgeNormal;
-            Point vNew = v1 + alpha*(v2-v1);
+
+            v2 *= alpha;
+            v2 += v1;
+            Point& vNew = v2;
 
             if(v1normal > epsilon)
                 (*edge)[0] = vNew;
@@ -280,7 +289,7 @@ Polyhedron::Polyhedron(const Point& lower, const Point& upper){
 
 double Polyhedron::volume() const{
 
-    if(size()<4) return 0;
+    // if(size()<4) return 0;
 
     double volume = 0;
     Point a = *(this->begin()->begin()->begin()); //(*this)[0][0][0];
@@ -290,15 +299,18 @@ double Polyhedron::volume() const{
         vector<Point> vertices = face.vertices();
         auto start = vertices.begin();
         auto stop  = vertices.end();
-        if(std::find(start, stop, a) == stop || true){
+        // if(std::find(start, stop, a) == stop){// || true){
             Point b = vertices[0];
-            for(auto it=start+1; it != stop-1; it++){
+            for(auto it=start+1; it != stop-1; ++it){
                 Point c = *it;
                 Point d = *(it+1);
-                Point temp = cross(b-d, c-d);
-                volume += std::abs(dot(a-d, temp));
+                a -= d;
+                b -= d;
+                c -= d;
+                Point temp = cross(b, c);
+                volume += std::abs(dot(a, temp));
             }
-        }
+        // }
     }
     volume /= 6.0;
     return volume;
@@ -308,18 +320,24 @@ void Polyhedron::clip(const Point& point, const Point& normal){
 
     Polyhedron &p = (*this);
     Polygon newFace;
+    newFace.reserve(10);
 
     for(auto face = p.begin(); face != p.end();){
 
         vector<Point> newEdge;
+        newEdge.reserve(2);
 
         for(auto edge = face->begin(); edge != face->end();){
 
-            Point v1 = (*edge)[0];
-            Point v2 = (*edge)[1];
+            const Point& v1 = (*edge)[0];
+            const Point& v2 = (*edge)[1];
 
-            double v1normal = dot(v1-point, normal);
-            double v2normal = dot(v2-point, normal);
+            // double v1normal = dot(v1-point, normal);
+            // double v2normal = dot(v2-point, normal);
+
+            double temp = dot(point,normal);
+            double v1normal = dot(v1, normal) - temp;
+            double v2normal = dot(v2, normal) - temp;
 
             if(v1normal > -epsilon && v2normal > -epsilon){
                 // edge is in front of wall. Remove it.
@@ -342,9 +360,14 @@ void Polyhedron::clip(const Point& point, const Point& normal){
             } else {
                 // edge intersects plane.
 
-                double edgeNormal = dot(v2-v1, normal);
+                Point vDiff = v2-v1;
+                double edgeNormal = dot(vDiff, normal);
                 double alpha = -v1normal / edgeNormal;
-                Point vNew = v1 + alpha*(v2-v1);
+
+                vDiff *= alpha;
+                vDiff += v1;
+                // Point vNew = v1 + alpha*(v2);
+                Point& vNew = vDiff;
 
                 if(v1normal > epsilon)
                     (*edge)[0] = vNew;
@@ -416,50 +439,6 @@ vector<Point> Polygon::vertices() const {
     } while(vertex != start);
 
     return vertices;
-}
-
-/******************************************************************************
- * ARITHMETIC OPERATIONS
- *****************************************************************************/
-
-double dot(const Point& a, const Point& b){
-    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
-}
-
-Point cross(const Point& a, const Point& b){
-    Point res;
-    res[0] = a[1]*b[2] - a[2]*b[1];
-    res[1] = a[2]*b[0] - a[0]*b[2];
-    res[2] = a[0]*b[1] - a[1]*b[0];
-    return res;
-}
-
-Point operator-(const Point& lhs, const Point& rhs){
-    Point res;
-    for(size_t i=0; i<lhs.size(); i++){
-        res[i] = lhs[i] - rhs[i];
-    }
-    return res;
-}
-
-Point operator+(const Point& lhs, const Point& rhs){
-    Point res;
-    for(size_t i=0; i<lhs.size(); i++){
-        res[i] = lhs[i] + rhs[i];
-    }
-    return res;
-}
-
-Point operator*(double lhs, const Point& rhs){
-    Point res;
-    for(size_t i=0; i<rhs.size(); i++){
-        res[i] = lhs * rhs[i];
-    }
-    return res;
-}
-
-Point operator*(const Point& lhs, double rhs){
-    return rhs*lhs;
 }
 
 /******************************************************************************

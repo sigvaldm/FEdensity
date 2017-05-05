@@ -28,7 +28,19 @@
 #include <iostream>
 #include <string>
 
+// #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+// #include <CGAL/point_generators_3.h>
+// #include <CGAL/algorithm.h>
+// #include <CGAL/Polyhedron_3.h>
+// #include <CGAL/convex_hull_3.h>
+
 namespace fedensity {
+
+// typedef CGAL::Exact_predicates_inexact_constructions_kernel  K;
+// typedef CGAL::Polyhedron_3<K>                                Polyhedron_3;
+// typedef K::Plane_3                                           Plane_3;
+// typedef K::Point_3                                           Point_3;
+// typedef K::Vector_3                                          Vector_3;
 
 using std::cout;
 using std::array;
@@ -37,6 +49,60 @@ using poly::Point;
 using poly::nDims;
 
 using std::string;
+
+// vector<double> Mesh::volume3CGAL() const{
+//
+//     using IdSet = Cell::IdSet;
+//
+//     vector<double> volume(vertices.size());
+//
+//     for(const auto& c : cells){
+//
+//
+//         array<Point_3, 4> vs;
+//         for(int i=0; i<nDims+1; ++i){
+//             const auto& vertex = vertices[c.vertices[i]];;
+//             vs[i] = Point_3(vertex[0], vertex[1], vertex[2]);
+//         }
+//
+//
+//         const IdSet& influencers = c.influencers;
+//
+//         for(const auto& i : influencers){
+//
+//             vector<Plane_3> planes;
+//
+//             planes.push_back(Plane(vs[0], vs[1], vs[2]));
+//             planes.push_back(Plane(vs[0], vs[1], vs[3]));
+//             planes.push_back(Plane(vs[0], vs[2], vs[3]));
+//             planes.push_back(Plane(vs[1], vs[2], vs[3]));
+//
+//             for(const auto& j : influencers){
+//                 if(j!=i){
+//
+//                     Point point = 0.5*(vertices[j]+vertices[i]);
+//                     Point normal = vertices[j]-vertices[i];
+//
+//                     Point_3 point_(point[0], point[1], point[2]);
+//                     Vector_3 normal_(normal[0], normal[1], normal[2]);
+//
+//                     planes.push_back(Plane(point_, normal_));
+//
+//                 }
+//             }
+//
+//             Polyhedron_3 poly;
+//             // CGAL::convex_hull_3(points.begin(), points.end(), poly);
+//             CGAL::halfspace_intersection_3(planes.begin(), planes.end(), poly);
+//
+//             // volume[i] += p.volume();
+//         }
+//
+//     }
+//
+//     return volume;
+//
+// }
 
 vector<double> Mesh::volume3() const{
 

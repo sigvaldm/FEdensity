@@ -34,6 +34,8 @@
 #include <initializer_list>
 #include <iostream>
 
+#include <cassert>
+
 namespace poly {
 
 /// Maximum number of geometric dimensions.
@@ -66,20 +68,76 @@ public:
     Point(double x);                       ///< 1D initialization
     Point(double x, double y);             ///< 2D initialization
     Point(double x, double y, double z);   ///< 3D initialization
-    double length() const;          ///< Euclidean length
+    double length() const;                 ///< Euclidean length
+    Point& operator-=(const Point& rhs);
+    Point& operator+=(const Point& rhs);
+    Point& operator*=(const Point& rhs);
+    Point& operator*=(double rhs);
 };
 
-/**
- * @name Vector operations on Points
- */
-///@{
-double dot(const Point& a, const Point& b);          ///< Dot product
-Point cross(const Point& a, const Point& b);         ///< Cross product
-Point operator+(const Point& lhs, const Point& rhs); ///< Addition
-Point operator-(const Point& lhs, const Point& rhs); ///< Subtraction
-Point operator*(double lhs, const Point& rhs); ///< Multiplication by scalar
-Point operator*(const Point& lhs, double rhs); ///< Multiplication by scalar
-///@}
+/******************************************************************************
+ * ARITHMETIC OPERATIONS
+ *****************************************************************************/
+
+inline Point& Point::operator+=(const Point& rhs){
+    Point &lhs = *this;
+    for(size_t i=0; i<nDims; ++i) lhs[i] += rhs[i];
+    return lhs;
+}
+
+inline Point& Point::operator-=(const Point& rhs){
+    Point &lhs = *this;
+    for(size_t i=0; i<nDims; ++i) lhs[i] -= rhs[i];
+    return lhs;
+}
+
+inline Point& Point::operator*=(const Point& rhs){
+    Point &lhs = *this;
+    for(size_t i=0; i<nDims; ++i) lhs[i] *= rhs[i];
+    return lhs;
+}
+
+inline Point& Point::operator*=(double rhs){
+    Point &lhs = *this;
+    for(size_t i=0; i<nDims; ++i) lhs[i] *= rhs;
+    return lhs;
+}
+
+inline Point operator+(Point lhs, const Point& rhs){
+    lhs += rhs;
+    return lhs;
+}
+
+inline Point operator-(Point lhs, const Point& rhs){
+    lhs -= rhs;
+    return lhs;
+}
+
+inline Point operator*(Point lhs, double rhs){
+    lhs *= rhs;
+    return lhs;
+}
+
+inline Point operator*(double lhs, const Point& rhs){
+    return rhs*lhs;
+}
+
+inline double dot(const Point& a, const Point& b){
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+}
+
+// same as dot(vec-point, normal) but more efficient
+// inline double normalComp(const Point& vec, const Point& point, const Point& normal){
+//     return
+// }
+
+inline Point cross(const Point& a, const Point& b){
+    Point res;
+    res[0] = a[1]*b[2] - a[2]*b[1];
+    res[1] = a[2]*b[0] - a[0]*b[2];
+    res[2] = a[0]*b[1] - a[1]*b[0];
+    return res;
+}
 
 /**
  * @brief A straight line represented by two end-points.
@@ -179,8 +237,6 @@ std::ostream& operator<<(std::ostream& out, const std::vector<Point>& edge);
 std::ostream& operator<<(std::ostream& out, const Polygon& face);
 std::ostream& operator<<(std::ostream& out, const Polyhedron& polyhedron);
 ///@}
-
-void test();
 
 } // namespace poly
 

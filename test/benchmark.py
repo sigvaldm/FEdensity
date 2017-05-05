@@ -10,7 +10,7 @@ def func(x, alog, alin, b):
 
 epsilon = 1e-10
 
-sizes = 0.1*np.array([(1./i)**(1./3.) for i in range(1,17)])
+sizes = 0.1*np.array([(1./i)**(1./3.) for i in range(1,3)])
 
 # sizes = [0.3, 0.2, 0.1, 0.03, 0.04, 0.045, 0.048, 0.049, 0.0495, 0.05]
 nNodes = []
@@ -41,38 +41,37 @@ for sz in sizes:
     timeVoropp.append(t)
     volVoropp = readVolume("voro.txt.vol")
 
-    # t0 = time.time()
-    # execFEdensity(fname, "fedensity.txt")
-    # t1 = time.time()
-    # t = 1000.0*(t1-t0)
-    # print("FEdensity executed in %7.2f ms"%t)
-    # timeFEdensity.append(t)
-    # volFEdensity = readVolume("fedensity.txt")
+    t0 = time.time()
+    execFEdensity(fname, "fedensity.txt")
+    t1 = time.time()
+    t = 1000.0*(t1-t0)
+    print("FEdensity executed in %7.2f ms"%t)
+    timeFEdensity.append(t)
+    volFEdensity = readVolume("fedensity.txt")
 
-    # maxnorm = np.max(np.abs(volVoropp-volFEdensity)/volVoropp)
-    # print("Maximum deviation: %5.2f%%"%(100*maxnorm))
+    maxnorm = np.max(np.abs(volVoropp-volFEdensity)/volVoropp)
+    print("Maximum deviation: %5.2f%%"%(100*maxnorm))
 
     nNodes.append(len(volVoropp))
 
 print(sizes)
 print(nNodes)
 
-popt, pcov = curve_fit(func, nNodes, timeVoropp)
-print(popt)
+poptVoropp, pcov = curve_fit(func, nNodes, timeVoropp)
+poptFEdensity, pcov = curve_fit(func, nNodes, timeFEdensity)
 
-alin = (timeVoropp[1]-timeVoropp[0])/(nNodes[1]-nNodes[0])
-alog = (timeVoropp[1]-timeVoropp[0])/(nNodes[1]*np.log(nNodes[1])-nNodes[0]*np.log(nNodes[0]))
-blin = timeVoropp[0]-alin*nNodes[0];
-blog = timeVoropp[0]-alog*nNodes[0]*np.log(nNodes[0]);
-x = np.linspace(nNodes[0],nNodes[-1],100)
-ylin = alin*x+blin;
-ylog = alog*x*np.log(x)+blog;
+if(10*poptVoropp[0]<poptVoropp[1]):
+    print('Voro++ is O(n)')
+else:
+    print('Voro++ is O(n*log n)')
+
+if(10*poptFEdensity[0]<poptFEdensity[1]):
+    print('FEdensity is O(n)')
+else:
+    print('FEdensity is O(n*log n)')
 
 plt.plot(nNodes, timeVoropp, 'o', label='Voro++')
-plt.plot(x,ylin, label='O(n)')
-plt.plot(x,ylog, label='O(n*log n)')
-plt.plot(x,func(x,*popt), label='curve fit')
-# plt.plot(nNodes, timeFEdensity, 's', label='FEdensity')
+plt.plot(nNodes, timeFEdensity, 's', label='FEdensity')
 plt.grid()
 plt.xlabel('Number of nodes')
 plt.ylabel('Execution time [ms]')
