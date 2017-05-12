@@ -1,42 +1,47 @@
 ##
 ## @file		makefile
-## @brief		FEdensity makefile.
+## @brief		GirafFE makefile.
 ## @author		Sigvald Marholm <sigvaldm@fys.uio.no>
 ##
 ## Copyright 2017 Sigvald Marholm <marholm@marebakken.com>
 ##
-## This file is part of FEdensity.
+## This file is part of GirafFE.
 ##
-## FEdensity is free software: you can redistribute it and/or modify it under
+## GirafFE is free software: you can redistribute it and/or modify it under
 ## the terms of the GNU General Public License as published by the Free Software
 ## Foundation, either version 3 of the License, or (at your option) any later
 ## version.
 ##
-## FEdensity is distributed in the hope that it will be useful, but WITHOUT ANY
+## GirafFE is distributed in the hope that it will be useful, but WITHOUT ANY
 ## WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 ## FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 ## details.
 ##
 ## You should have received a copy of the GNU General Public License along with
-## FEdensity. If not, see <http://www.gnu.org/licenses/>.
+## GirafFE. If not, see <http://www.gnu.org/licenses/>.
 
 CC		= g++
 COPT	= -O3
 CADD    =
 
-EXEC    = fedensity
+EXEC    = giraffe
 
-CFLAGS  = -std=c++17 -Wall -fPIC $(CADD)
+CFLAGS  = -std=c++17 -Wall -fPIC -I../voro++-0.4.6/src $(CADD)
 
 SDIR	= src
 ODIR	= src/obj
 HDIR	= src
 DDIR	= doc
 
-HEAD_	= polyhedron.h FEdensity.h
-SRC_	= polyhedron.cpp FEdensity.cpp io.cpp
+HEAD_	= polyhedron.h GirafFE.h
+SRC_	= polyhedron.cpp GirafFE.cpp io.cpp
 OBJ_	= $(SRC_:.cpp=.o)
 DOC_	= main.dox
+
+objs_=cell.o common.o container.o unitcell.o v_compute.o c_loops.o \
+     v_base.o wall.o pre_container.o container_prd.o
+objs = $(patsubst %,../voro++-0.4.6/src/%,$(objs_))
+src=$(patsubst %.o,%.cc,$(objs))
 
 HEAD	= $(patsubst %,$(HDIR)/%,$(HEAD_))
 SRC		= $(patsubst %,$(SDIR)/%,$(SRC_))
@@ -45,11 +50,11 @@ OBJ		= $(patsubst %,$(ODIR)/%,$(OBJ_))
 all: version $(EXEC) $(EXEC) doc
 
 $(EXEC): $(ODIR)/main.o $(OBJ)
-	@echo "Linking FEdensity CLI tool"
-	@$(CC) $^ -o $@ $(CFLAGS)
+	@echo "Linking GirafFE CLI tool"
+	@$(CC) $^ $(objs) -o $@ $(CFLAGS)
 
 $(EXEC).so: $(OBJ)
-	@echo "Linking FEdensity library"
+	@echo "Linking GirafFE library"
 	@$(CC) $(OBJ) -shared -o $(EXEC).so
 
 $(ODIR)/%.o: $(SDIR)/%.cpp $(HEAD)

@@ -1,46 +1,36 @@
 /**
- * @file		FEdensity.cpp
- * @brief		FEdensity API
+ * @file		GirafFE.cpp
+ * @brief		GirafFE API
  * @author		Sigvald Marholm <sigvaldm@fys.uio.no>,
  */
 
 /*
  * Copyright 2017 Sigvald Marholm <marholm@marebakken.com>
  *
- * This file is part of FEdensity.
+ * This file is part of GirafFE.
  *
- * FEdensity is free software: you can redistribute it and/or modify it under
+ * GirafFE is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software
  * Foundation, either version 3 of the License, or (at your option) any later
  * version.
  *
- * FEdensity is distributed in the hope that it will be useful, but WITHOUT ANY
+ * GirafFE is distributed in the hope that it will be useful, but WITHOUT ANY
  * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
  * details.
  *
  * You should have received a copy of the GNU General Public License along with
- * FEdensity. If not, see <http://www.gnu.org/licenses/>.
+ * GirafFE. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "FEdensity.h"
+#include "GirafFE.h"
+#include "voro++.hh"
 
 #include <iostream>
 #include <string>
 
-// #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-// #include <CGAL/point_generators_3.h>
-// #include <CGAL/algorithm.h>
-// #include <CGAL/Polyhedron_3.h>
-// #include <CGAL/convex_hull_3.h>
 
-namespace fedensity {
-
-// typedef CGAL::Exact_predicates_inexact_constructions_kernel  K;
-// typedef CGAL::Polyhedron_3<K>                                Polyhedron_3;
-// typedef K::Plane_3                                           Plane_3;
-// typedef K::Point_3                                           Point_3;
-// typedef K::Vector_3                                          Vector_3;
+namespace giraffe {
 
 using std::cout;
 using std::array;
@@ -49,60 +39,6 @@ using poly::Point;
 using poly::nDims;
 
 using std::string;
-
-// vector<double> Mesh::volume3CGAL() const{
-//
-//     using IdSet = Cell::IdSet;
-//
-//     vector<double> volume(vertices.size());
-//
-//     for(const auto& c : cells){
-//
-//
-//         array<Point_3, 4> vs;
-//         for(int i=0; i<nDims+1; ++i){
-//             const auto& vertex = vertices[c.vertices[i]];;
-//             vs[i] = Point_3(vertex[0], vertex[1], vertex[2]);
-//         }
-//
-//
-//         const IdSet& influencers = c.influencers;
-//
-//         for(const auto& i : influencers){
-//
-//             vector<Plane_3> planes;
-//
-//             planes.push_back(Plane(vs[0], vs[1], vs[2]));
-//             planes.push_back(Plane(vs[0], vs[1], vs[3]));
-//             planes.push_back(Plane(vs[0], vs[2], vs[3]));
-//             planes.push_back(Plane(vs[1], vs[2], vs[3]));
-//
-//             for(const auto& j : influencers){
-//                 if(j!=i){
-//
-//                     Point point = 0.5*(vertices[j]+vertices[i]);
-//                     Point normal = vertices[j]-vertices[i];
-//
-//                     Point_3 point_(point[0], point[1], point[2]);
-//                     Vector_3 normal_(normal[0], normal[1], normal[2]);
-//
-//                     planes.push_back(Plane(point_, normal_));
-//
-//                 }
-//             }
-//
-//             Polyhedron_3 poly;
-//             // CGAL::convex_hull_3(points.begin(), points.end(), poly);
-//             CGAL::halfspace_intersection_3(planes.begin(), planes.end(), poly);
-//
-//             // volume[i] += p.volume();
-//         }
-//
-//     }
-//
-//     return volume;
-//
-// }
 
 vector<double> Mesh::volume3() const{
 
@@ -131,6 +67,49 @@ vector<double> Mesh::volume3() const{
             volume[i] += p.volume();
         }
     }
+
+    return volume;
+}
+
+vector<double> Mesh::volume3voro() const{
+
+    using IdSet = Cell::IdSet;
+
+    size_t maxInfluencers = 0;
+
+    vector<double> volume(vertices.size());
+
+    for(const auto& c : cells){
+
+        PointArray vs;
+        for(int i=0; i<nDims+1; i++) vs[i] = vertices[c.vertices[i]];
+
+        const IdSet& influencers = c.influencers;
+
+        maxInfluencers = std::max(maxInfluencers, influencers.size());
+
+
+        for(const auto& i : influencers){
+
+            voro::voronoicell p;
+            const Point &a = vs[0];
+            const Point &b = vs[1];
+            const Point &c = vs[2];
+            const Point &d = vs[3];
+            p.init_tetrahedron(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2]);
+
+            for(const auto& j : influencers){
+                if(j!=i){
+                    Point dist = vertices[j]-vertices[i];
+                    p.nplane(vertices[j][0], vertices[j][1], vertices[j][2], dist.length()*dist.length(), 0);
+                }
+            }
+
+            volume[i] += p.volume();
+        }
+    }
+
+    cout << "Max influencers: " << maxInfluencers << "\n";
 
     return volume;
 }
@@ -240,7 +219,7 @@ vector<double> Mesh::pittewayVolume() const{
 void Mesh::computeInfluencers(){
     for(size_t i=0; i<cells.size(); ++i){
         Point center = cellCircumcenter(i);
-        propagate(center, cells[i], i);
+        propagate2(center, cells[i], i);
     }
 }
 
@@ -267,6 +246,74 @@ void Mesh::propagate(const poly::Point& center, const Cell& first, int cellIndex
 
     }
 }
+
+inline void argmax2of4(std::array<double, 4> v, int& a, int& b){
+
+    // Optimal sorting network
+
+    std::array<int, 4> i = {0,1,2,3};
+
+    if(v[i[0]] > v[i[1]]) std::swap(i[0], i[1]);
+    if(v[i[2]] > v[i[3]]) std::swap(i[2], i[3]);
+    if(v[i[0]] > v[i[2]]) std::swap(i[0], i[2]);
+    if(v[i[1]] > v[i[3]]) std::swap(i[1], i[3]);
+    if(v[i[1]] > v[i[2]]) std::swap(i[1], i[2]);
+
+    a = i[3];
+    b = i[2];
+}
+
+inline void argmax1of3(std::array<double, 4> v, int& a){
+    if(v[0] < v[1])
+        if(v[1] < v[2]) a = 2;
+        else            a = 1;
+    else                a = 0;
+}
+
+void Mesh::propagate2(const poly::Point& center, const Cell& first, int cellIndex){
+
+    using IdArray = Cell::IdArray;
+    using IdSet = Cell::IdSet;
+
+    PointArray vertices = cell(cellIndex);
+    PointArray normals = facetNormals(cellIndex);
+    IdArray neighbors = cells[cellIndex].neighbors;
+    IdSet& influencers = cells[cellIndex].influencers;
+
+    for(size_t i=0; i<dim+1; ++i)
+        influencers.insert(first.vertices[i]);
+
+    std::array<double, nDims+1> centerNormals;
+
+    for(size_t i=0; i<dim+1; ++i){
+
+        Point normal = normals[i];
+        Point point = vertices[(i+1)%(dim+1)];
+
+        centerNormals[i] = dot(center-point, normal);
+
+    }
+
+    if(dim==2){
+        int i;
+        argmax1of3(centerNormals, i);
+
+        if(centerNormals[i]>poly::epsilon && neighbors[i]>=0)
+            propagate2(center, first, neighbors[i]);
+
+    } else { // dim==3
+        int i, j;
+        argmax2of4(centerNormals, i, j);
+
+        if(centerNormals[i]>poly::epsilon && neighbors[i]>=0)
+            propagate2(center, first, neighbors[i]);
+
+        if(centerNormals[j]>poly::epsilon && neighbors[j]>=0)
+            propagate2(center, first, neighbors[j]);
+    }
+
+}
+
 
 inline double det(  double a, double b,
                     double c, double d){
@@ -402,4 +449,4 @@ std::ostream& operator<<(std::ostream& out, const Cell& cell){
     return out;
 }
 
-} // namespace fedensity
+} // namespace giraffe

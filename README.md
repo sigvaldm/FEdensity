@@ -1,1 +1,1 @@
-# FEdensity
+# GirafFE

@@ -10,7 +10,7 @@ def func(x, alog, alin, b):
 
 epsilon = 1e-10
 
-sizes = 0.1*np.array([(1./i)**(1./3.) for i in range(1,3)])
+sizes = 0.1*np.array([(1./i)**(1./3.) for i in range(1,6)])
 
 # sizes = [0.3, 0.2, 0.1, 0.03, 0.04, 0.045, 0.048, 0.049, 0.0495, 0.05]
 nNodes = []
@@ -57,18 +57,18 @@ for sz in sizes:
 print(sizes)
 print(nNodes)
 
-poptVoropp, pcov = curve_fit(func, nNodes, timeVoropp)
-poptFEdensity, pcov = curve_fit(func, nNodes, timeFEdensity)
-
-if(10*poptVoropp[0]<poptVoropp[1]):
-    print('Voro++ is O(n)')
-else:
-    print('Voro++ is O(n*log n)')
-
-if(10*poptFEdensity[0]<poptFEdensity[1]):
-    print('FEdensity is O(n)')
-else:
-    print('FEdensity is O(n*log n)')
+# poptVoropp, pcov = curve_fit(func, nNodes, timeVoropp)
+# poptFEdensity, pcov = curve_fit(func, nNodes, timeFEdensity)
+#
+# if(10*poptVoropp[0]<poptVoropp[1]):
+#     print('Voro++ is O(n)')
+# else:
+#     print('Voro++ is O(n*log n)')
+#
+# if(10*poptFEdensity[0]<poptFEdensity[1]):
+#     print('FEdensity is O(n)')
+# else:
+#     print('FEdensity is O(n*log n)')
 
 plt.plot(nNodes, timeVoropp, 'o', label='Voro++')
 plt.plot(nNodes, timeFEdensity, 's', label='FEdensity')
