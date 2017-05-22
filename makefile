@@ -33,8 +33,8 @@ ODIR	= src/obj
 HDIR	= src
 DDIR	= doc
 
-HEAD_	= polyhedron.h GirafFE.h
-SRC_	= polyhedron.cpp GirafFE.cpp io.cpp
+HEAD_	= polyhedron.h GirafFE.h utils.h
+SRC_	= polyhedron.cpp GirafFE.cpp io.cpp utils.cpp
 OBJ_	= $(SRC_:.cpp=.o)
 DOC_	= main.dox
 

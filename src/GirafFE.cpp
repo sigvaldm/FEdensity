@@ -30,7 +30,7 @@
 #include <string>
 
 
-namespace giraffe {
+namespace gfe {
 
 using std::cout;
 using std::array;
@@ -100,12 +100,19 @@ vector<double> Mesh::volume3voro() const{
 
             for(const auto& j : influencers){
                 if(j!=i){
-                    Point dist = vertices[j]-vertices[i];
-                    p.nplane(vertices[j][0], vertices[j][1], vertices[j][2], dist.length()*dist.length(), 0);
+                    Point n = vertices[j]-vertices[i];
+                    Point po = 0.5*(vertices[j]+vertices[i]);
+                    double nlen = n.length();
+                    n /= nlen;
+                    double d = dot(po,n);
+                    p.nplane(n[0], n[1], n[2], 2*d, 0);
                 }
             }
 
-            volume[i] += p.volume();
+            double pvol = p.volume();
+            assert(pvol>=0.0);
+
+            volume[i] += pvol;
         }
     }
 
@@ -219,8 +226,17 @@ vector<double> Mesh::pittewayVolume() const{
 void Mesh::computeInfluencers(){
     for(size_t i=0; i<cells.size(); ++i){
         Point center = cellCircumcenter(i);
-        propagate2(center, cells[i], i);
+        propagate(center, cells[i], i);
     }
+}
+
+GraphNode<size_t> Mesh::computeInfluencersStatistics(){
+    GraphNode<size_t> root(-1);
+    for(size_t i=0; i<cells.size(); ++i){
+        Point center = cellCircumcenter(i);
+        propagateStatistics(center, cells[i], i, root);
+    }
+    return root;
 }
 
 void Mesh::propagate(const poly::Point& center, const Cell& first, int cellIndex){
@@ -247,6 +263,33 @@ void Mesh::propagate(const poly::Point& center, const Cell& first, int cellIndex
     }
 }
 
+void Mesh::propagateStatistics(const poly::Point& center, const Cell& first, int cellIndex, GraphNode<size_t>& parent){
+
+    using IdArray = Cell::IdArray;
+    using IdSet = Cell::IdSet;
+
+    parent.children.push_back(GraphNode<size_t>(cellIndex));
+    GraphNode<size_t> &thisNode = *(parent.children.end()-1);
+
+    PointArray vertices = cell(cellIndex);
+    PointArray normals = facetNormals(cellIndex);
+    IdArray neighbors = cells[cellIndex].neighbors;
+    IdSet& influencers = cells[cellIndex].influencers;
+
+    for(size_t i=0; i<dim+1; ++i)
+        influencers.insert(first.vertices[i]);
+
+    for(size_t i=0; i<dim+1; ++i){
+
+        Point normal = normals[i];
+        Point point = vertices[(i+1)%(dim+1)];
+
+        if(dot(center-point, normal)>poly::epsilon && neighbors[i]>=0)
+            propagateStatistics(center, first, neighbors[i], thisNode);
+
+    }
+}
+
 inline void argmax2of4(std::array<double, 4> v, int& a, int& b){
 
     // Optimal sorting network
@@ -263,6 +306,33 @@ inline void argmax2of4(std::array<double, 4> v, int& a, int& b){
     b = i[2];
 }
 
+inline void argmax2of4alt(std::array<double, 4> v, int& a, int& b){
+
+    // TBD: Untested
+
+    // Better than optimal sorting network by not sorting completely.
+    //
+    // Uses the following home-made network:
+    // _________
+    // _|___|___
+    // ___|___|_
+    // _______|_
+    //
+    // "Bubbles" out the minimum of three and three wires.
+    //
+    // The upper branches will contain the two maximal in arbitrary order.
+
+    std::array<int, 4> i = {0,1,2,3};
+
+    if(v[i[2]] > v[i[3]]) std::swap(i[2], i[3]);
+    if(v[i[1]] > v[i[2]]) std::swap(i[1], i[2]);
+    if(v[i[2]] > v[i[3]]) std::swap(i[2], i[3]);
+    if(v[i[0]] > v[i[2]]) std::swap(i[0], i[2]);
+
+    a = i[3];
+    b = i[2];
+}
+
 inline void argmax1of3(std::array<double, 4> v, int& a){
     if(v[0] < v[1])
         if(v[1] < v[2]) a = 2;
@@ -270,7 +340,7 @@ inline void argmax1of3(std::array<double, 4> v, int& a){
     else                a = 0;
 }
 
-void Mesh::propagate2(const poly::Point& center, const Cell& first, int cellIndex){
+void Mesh::propagateRestricted(const poly::Point& center, const Cell& first, int cellIndex){
 
     using IdArray = Cell::IdArray;
     using IdSet = Cell::IdSet;
@@ -299,17 +369,17 @@ void Mesh::propagate2(const poly::Point& center, const Cell& first, int cellInde
         argmax1of3(centerNormals, i);
 
         if(centerNormals[i]>poly::epsilon && neighbors[i]>=0)
-            propagate2(center, first, neighbors[i]);
+            propagateRestricted(center, first, neighbors[i]);
 
     } else { // dim==3
         int i, j;
         argmax2of4(centerNormals, i, j);
 
         if(centerNormals[i]>poly::epsilon && neighbors[i]>=0)
-            propagate2(center, first, neighbors[i]);
+            propagateRestricted(center, first, neighbors[i]);
 
         if(centerNormals[j]>poly::epsilon && neighbors[j]>=0)
-            propagate2(center, first, neighbors[j]);
+            propagateRestricted(center, first, neighbors[j]);
     }
 
 }

@@ -23,17 +23,30 @@
  * GirafFE. If not, see <http://www.gnu.org/licenses/>.
  */
 
+ #ifndef GIRAFFE_H
+ #define GIRAFFE_H
+
 #include <vector>
 #include <array>
 #include <utility>
 #include <set>
 #include <string>
+#include <map>
 #include "version.h"
 #include "polyhedron.h"
 
-namespace giraffe {
+namespace gfe {
 
 using PointArray = std::array<poly::Point, poly::nDims+1>;
+
+// Poor man's graph structure for diagnostics only
+template <typename T>
+class GraphNode {
+public:
+    T value;
+    std::vector<GraphNode<T> > children;
+    GraphNode(T v) : value(v) {};
+};
 
 // Cell could probably benefit from having a virtual base class
 class Cell {
@@ -54,10 +67,12 @@ public:
     std::vector<double> volume() const;
     poly::Point cellCircumcenter(int index) const;
     void computeInfluencers();
+    GraphNode<size_t> computeInfluencersStatistics();
     PointArray cell(int index) const;
     PointArray facetNormals(int index) const;
     void propagate(const poly::Point& center, const Cell& first, int cellIndex);
-    void propagate2(const poly::Point& center, const Cell& first, int cellIndex);
+    void propagateRestricted(const poly::Point& center, const Cell& first, int cellIndex);
+    void propagateStatistics(const poly::Point& center, const Cell& first, int cellIndex, GraphNode<size_t>& parent);
     void findNeighbors(const std::vector<std::vector<int>>& belongsTo);
     std::vector<double> volume3voro() const;
 private:
@@ -72,4 +87,6 @@ std::istream& readFE(std::istream& in, Mesh &mesh);
 std::ostream& writeVector(std::ostream& out, const std::vector<double>& vec);
 std::ostream& operator<<(std::ostream& out, const Cell& cell);
 
-} // namspace giraffe
+} // namspace gfe
+
+#endif // GIRAFFE_H

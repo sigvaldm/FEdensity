@@ -31,21 +31,21 @@ def gmshToVoro(fInName, fOutName):
             return lower, upper
 
 def execVoropp(fInName, lower, upper):
-    cmd = os.path.join(os.path.dirname(os.path.realpath(__file__)),"voro++")
+    cmd = os.path.join(os.path.dirname(os.path.realpath(__file__)),"voro++hex")
     cmd += " -o"
     for i in range(3): cmd += " %s %s"%(lower[i].hex(),upper[i].hex())
     cmd += " voro.txt"
     sp.call(cmd, shell=True)
 
-def execFEdensity(fInName, fOutName):
-    cmd = os.path.join(os.path.dirname(os.path.realpath(__file__)),"../fedensity")
+def execGiraffe(fInName, fOutName):
+    cmd = os.path.join(os.path.dirname(os.path.realpath(__file__)),"../giraffe")
     cmd += " " + fInName + " " + fOutName
     devnull = open(os.devnull, 'w')
     sp.call(cmd, shell=True, stdout=devnull)
 
 def readVolume(fInName):
     with open(fInName, 'r') as fIn:
-        return np.array([float(line.split()[-1]) for line in fIn])
+        return np.array([float.fromhex(line.split()[-1]) for line in fIn])
 
 def eq(a, b, tol):
     return all(np.abs(np.array(a)-np.array(b))<tol)

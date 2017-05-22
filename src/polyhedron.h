@@ -41,7 +41,7 @@ namespace poly {
 /// Maximum number of geometric dimensions.
 constexpr int nDims = 3;
 
-constexpr double epsilon = 1e-10;
+constexpr double epsilon = 1e-12;
 
 /**
  * @brief A cartesian point or geometric (not algebraic) vector.
@@ -73,6 +73,7 @@ public:
     Point& operator+=(const Point& rhs);
     Point& operator*=(const Point& rhs);
     Point& operator*=(double rhs);
+    Point& operator/=(double rhs);
 };
 
 /******************************************************************************
@@ -100,6 +101,12 @@ inline Point& Point::operator*=(const Point& rhs){
 inline Point& Point::operator*=(double rhs){
     Point &lhs = *this;
     for(size_t i=0; i<nDims; ++i) lhs[i] *= rhs;
+    return lhs;
+}
+
+inline Point& Point::operator/=(double rhs){
+    Point &lhs = *this;
+    for(size_t i=0; i<nDims; ++i) lhs[i] /= rhs;
     return lhs;
 }
 

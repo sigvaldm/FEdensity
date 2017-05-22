@@ -42,7 +42,7 @@ using poly::Point;
 using std::cout;
 using std::cerr;
 
-namespace giraffe {
+namespace gfe {
 
 std::istream& readGmsh(std::istream& in, Mesh &mesh){
 
