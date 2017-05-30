@@ -48,6 +48,8 @@ int main(int argc, char *argv[]){
 
     cout << "GirafFE " << VERSION << ".\n";
 
+	cout << "Double size: " << sizeof(double) << " bytes\n";
+
 	if(argopt(argc, argv, 'h')){
 
 		cout << "Copyright: 2017 Sigvald Marholm <marholm@marebakken.com>\n";
@@ -68,6 +70,9 @@ int main(int argc, char *argv[]){
 		cout << "    -p  Test if input mesh is Pitteway\n";
 		cout << "    -d  Test if input mesh is Delaunay\n";
 		cout << "    -s  Output statistics about circumcenter propagation\n";
+		cout << "    -a  Cut against all vertices (slow, for testing)\n";
+		cout << "    -n  Probe node i (e.g. `-n 35`)\n";
+		cout << "    -c  Probe cell i (.e.g `-c 42`)\n";
 		cout << "    -x  Output data in lossless hexadecimal representation\n";
 		cout << "    -o  Output file name (e.g. `-o volume.txt`)\n";
 		cout << "    -w  Overwrite existing files\n";
@@ -103,12 +108,16 @@ int main(int argc, char *argv[]){
 	}
 
 	/*
-	 * ALTERNATIVE MODES
+	 * FORMAT ALTERNATORS
 	 */
 
 	if(argopt(argc, argv, 'x')){
  		cout << std::hexfloat;
  	}
+
+	/*
+	 * ALTERNATIVE MODES
+	 */
 
 	if(argopt(argc, argv, 'p')){
 		cout << "Pitteway check not implemented yet\n";
@@ -162,6 +171,41 @@ int main(int argc, char *argv[]){
 
 	}
 
+	if(const char *c = argopt(argc, argv, 'c')){
+
+		GraphNode<size_t> stat = mesh.computeInfluencersStatistics();
+
+		size_t cind = std::stoi(c);
+
+		cout << "Vertices:\n";
+		for(const auto& v : mesh.cells[cind].vertices){
+			cout << "  " << v << " " << mesh.vertices[v] << "\n";
+		}
+
+		cout << "Circumcenter: " << mesh.cellCircumcenter(cind) << "\n";
+
+		cout << "The following cells were propagated through:\n";
+		cout << stat.children[cind];
+
+		cout << "Influencers:\n";
+		for(const auto& v : mesh.cells[cind].influencers){
+			cout << "  " << v << " " << mesh.vertices[v] << "\n";
+		}
+
+		return 0;
+
+	}
+
+	if(const char *c = argopt(argc, argv, 'n')){
+
+		GraphNode<size_t> stat = mesh.computeInfluencersStatistics();
+
+		mesh.volumeInspect(std::stoi(c));
+
+		return 0;
+
+	}
+
 	/*
  	 * GET OUTPUT FILE
 	 */
@@ -187,9 +231,15 @@ int main(int argc, char *argv[]){
 	 * VORONOI COMPUTATION
 	 */
 
-	mesh.computeInfluencers();
+	if(argopt(argc, argv, 'a')){
+		mesh.computeInfluencersAll();
+	} else {
+		mesh.computeInfluencers();
+	}
+
+
     vector<double> volume = mesh.volume();
-    double totalVolume = std::accumulate(volume.begin(), volume.end(), 0.0f);
+    double totalVolume = std::accumulate(volume.begin(), volume.end(), 0.0);
     cout << "Total volume: " << totalVolume << "\n";
 
     writeVector(outfile, volume);

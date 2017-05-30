@@ -24,10 +24,12 @@
  */
 
 #include "GirafFE.h"
-#include "voro++.hh"
+// #include "voro++.hh"
 
 #include <iostream>
 #include <string>
+#include <algorithm>
+#include "utils.h"
 
 
 namespace gfe {
@@ -39,12 +41,16 @@ using poly::Point;
 using poly::nDims;
 
 using std::string;
+using std::cout;
 
 vector<double> Mesh::volume3() const{
 
     using IdSet = Cell::IdSet;
 
     vector<double> volume(vertices.size());
+
+    Progress prog(cout, pad("Computing volume",progPad),
+		cells.size(), progLen, progPercent);
 
     for(const auto& c : cells){
 
@@ -66,57 +72,175 @@ vector<double> Mesh::volume3() const{
 
             volume[i] += p.volume();
         }
+
+        ++prog;
     }
 
     return volume;
 }
 
-vector<double> Mesh::volume3voro() const{
+void Mesh::volumeInspect(size_t i) const{
+    return (dim==3) ? volume3Inspect(i) : volume2Inspect(i);
+}
 
-    using IdSet = Cell::IdSet;
+void Mesh::volume2Inspect(size_t n) const{
+    cout << "2D not supported for this operation yet.\n";
+}
 
-    size_t maxInfluencers = 0;
+void Mesh::volume3Inspect(size_t n) const{
 
-    vector<double> volume(vertices.size());
+    cout << "Vertex " << n << ": " << vertices[n] << "\n";
 
-    for(const auto& c : cells){
+
+    cout << "Incident cells:";
+    for(size_t i=0; i<cells.size(); ++i){
+        for(const auto& v : cells[i].vertices){
+            if(v==n) cout << " " << i;
+        }
+    }
+    cout << "\n";
+
+    vector<size_t> influencedCells;
+    for(size_t i=0; i<cells.size(); ++i){
+        for(const auto& v : cells[i].influencers){
+            if(v==n) influencedCells.push_back(i);
+        }
+    }
+
+    double volumeInfluencers = 0;
+    double volumeAll = 0;
+
+    cout << "Clipping influenced cells: \n";
+
+    for(const auto& cid : influencedCells){
+
+        const auto& c = cells[cid];
 
         PointArray vs;
         for(int i=0; i<nDims+1; i++) vs[i] = vertices[c.vertices[i]];
 
-        const IdSet& influencers = c.influencers;
+        poly::Polyhedron p(vs);
+        double volume = 0;
 
-        maxInfluencers = std::max(maxInfluencers, influencers.size());
+        for(const auto& j : c.influencers){
+            if(j!=n){
+                Point point = 0.5*(vertices[j]+vertices[n]);
+                Point normal = vertices[j]-vertices[n];
+                p.clip(point, normal);
+            }
+        }
 
+        volume = p.volume();
+        cout << "  Volume after clipping cell " << cid << " against influencers:    " << volume << "\n";
+        volumeInfluencers += volume;
 
-        for(const auto& i : influencers){
+        for(size_t j = 0; j<vertices.size(); ++j){
 
-            voro::voronoicell p;
-            const Point &a = vs[0];
-            const Point &b = vs[1];
-            const Point &c = vs[2];
-            const Point &d = vs[3];
-            p.init_tetrahedron(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2]);
+            const auto& b = c.influencers.begin();
+            const auto& e = c.influencers.end();
+            if(std::find(b,e,j)==e){
 
-            for(const auto& j : influencers){
-                if(j!=i){
-                    Point n = vertices[j]-vertices[i];
-                    Point po = 0.5*(vertices[j]+vertices[i]);
-                    double nlen = n.length();
-                    n /= nlen;
-                    double d = dot(po,n);
-                    p.nplane(n[0], n[1], n[2], 2*d, 0);
+                Point point = 0.5*(vertices[j]+vertices[n]);
+                Point normal = vertices[j]-vertices[n];
+                p.clip(point, normal);
+
+                double temp = p.volume();
+                if(volume-temp>poly::epsilon){
+                    volume = temp;
+                    cout << "  NB: clipping against node " << j << "decreased volume: " << volume << "\n";
+                }
+            }
+        }
+        volumeAll += volume;
+    }
+
+    for(size_t cid = 0; cid<cells.size(); ++cid){
+
+        const auto& b = influencedCells.begin();
+        const auto& e = influencedCells.end();
+        if(std::find(b,e,cid)==e){
+
+            const auto& c = cells[cid];
+
+            PointArray vs;
+            for(int i=0; i<nDims+1; i++) vs[i] = vertices[c.vertices[i]];
+
+            poly::Polyhedron p(vs);
+            double volume = 0;
+
+            for(size_t j=0; j<vertices.size(); ++j){
+                if(j!=n){
+
+                    Point point = 0.5*(vertices[j]+vertices[n]);
+                    Point normal = vertices[j]-vertices[n];
+                    p.clip(point, normal);
+
+                    volume = p.volume();
+                    if(volume<poly::epsilon) break;
                 }
             }
 
-            double pvol = p.volume();
-            assert(pvol>=0.0);
+            if(volume>poly::epsilon){
+                cout << "Cell " << cid << " gave unexpected volume contribution: " << volume << "\n";
+            }
+            volumeAll += volume;
 
-            volume[i] += pvol;
         }
+
     }
 
-    cout << "Max influencers: " << maxInfluencers << "\n";
+    cout << "Total:\n";
+    cout << "  Volume, clipping against influencers: " << volumeInfluencers << "\n";
+    cout << "  Volume, clipping against all nodes:   " << volumeAll << "\n";
+
+}
+
+vector<double> Mesh::volume3voro() const{
+
+    // using IdSet = Cell::IdSet;
+
+    // size_t maxInfluencers = 0;
+
+    vector<double> volume(vertices.size());
+
+    // for(const auto& c : cells){
+	//
+    //     PointArray vs;
+    //     for(int i=0; i<nDims+1; i++) vs[i] = vertices[c.vertices[i]];
+	//
+    //     const IdSet& influencers = c.influencers;
+	//
+    //     maxInfluencers = std::max(maxInfluencers, influencers.size());
+	//
+	//
+    //     for(const auto& i : influencers){
+	//
+    //         voro::voronoicell p;
+    //         const Point &a = vs[0];
+    //         const Point &b = vs[1];
+    //         const Point &c = vs[2];
+    //         const Point &d = vs[3];
+    //         p.init_tetrahedron(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2]);
+	//
+    //         for(const auto& j : influencers){
+    //             if(j!=i){
+    //                 Point n = vertices[j]-vertices[i];
+    //                 Point po = 0.5*(vertices[j]+vertices[i]);
+    //                 double nlen = n.length();
+    //                 n /= nlen;
+    //                 double d = dot(po,n);
+    //                 p.nplane(n[0], n[1], n[2], 2*d, 0);
+    //             }
+    //         }
+	//
+    //         double pvol = p.volume();
+    //         assert(pvol>=0.0);
+	//
+    //         volume[i] += pvol;
+    //     }
+    // }
+	//
+    // cout << "Max influencers: " << maxInfluencers << "\n";
 
     return volume;
 }
@@ -124,6 +248,9 @@ vector<double> Mesh::volume3voro() const{
 vector<double> Mesh::volume2() const{
 
     using IdSet = Cell::IdSet;
+
+    Progress prog(cout, pad("Computing volume",progPad),
+		cells.size(), progLen, progPercent);
 
     vector<double> volume(vertices.size());
 
@@ -152,6 +279,8 @@ vector<double> Mesh::volume2() const{
 
             volume[i] += p.area();
         }
+
+        ++prog;
     }
 
     return volume;
@@ -164,6 +293,9 @@ vector<double> Mesh::volume() const{
 vector<double> Mesh::pittewayVolume3() const{
 
     vector<double> volume(vertices.size());
+
+    Progress prog(cout, pad("Computing volume",progPad),
+        cells.size(), progLen, progPercent);
 
     for(const auto& cell : cells){
 
@@ -183,6 +315,8 @@ vector<double> Mesh::pittewayVolume3() const{
 
             volume[cell.vertices[i]] += p.volume();
         }
+
+        ++prog;
     }
 
     return volume;
@@ -191,6 +325,9 @@ vector<double> Mesh::pittewayVolume3() const{
 vector<double> Mesh::pittewayVolume2() const{
 
     vector<double> volume(vertices.size());
+
+    Progress prog(cout, pad("Computing volume",progPad),
+        cells.size(), progLen, progPercent);
 
     for(const auto& cell : cells){
         std::array<Point, 3> vs;
@@ -214,6 +351,8 @@ vector<double> Mesh::pittewayVolume2() const{
 
             volume[cell.vertices[i]] += p.area();
         }
+
+        ++prog;
     }
 
     return volume;
@@ -224,19 +363,38 @@ vector<double> Mesh::pittewayVolume() const{
 }
 
 void Mesh::computeInfluencers(){
+    Progress prog(cout, pad("Propagating centers",progPad),
+        cells.size(), progLen, progPercent);
     for(size_t i=0; i<cells.size(); ++i){
         Point center = cellCircumcenter(i);
         propagate(center, cells[i], i);
+        ++prog;
     }
 }
 
 GraphNode<size_t> Mesh::computeInfluencersStatistics(){
+    Progress prog(cout, pad("Propagating centers",progPad),
+        cells.size(), progLen, progPercent);
     GraphNode<size_t> root(-1);
     for(size_t i=0; i<cells.size(); ++i){
         Point center = cellCircumcenter(i);
         propagateStatistics(center, cells[i], i, root);
+        ++prog;
     }
     return root;
+}
+
+void Mesh::computeInfluencersAll(){
+    Progress prog(cout, pad("Propagating centers",progPad),
+        cells.size(), progLen, progPercent);
+	for(size_t i=0; i<cells.size(); ++i){
+		for(size_t j=0; j<cells.size(); ++j){
+            for(size_t k=0; k<dim+1; ++k){
+			    cells[i].influencers.insert(cells[j].vertices[k]);
+            }
+		}
+        ++prog;
+	}
 }
 
 void Mesh::propagate(const poly::Point& center, const Cell& first, int cellIndex){

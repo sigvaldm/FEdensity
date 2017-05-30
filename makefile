@@ -26,7 +26,7 @@ CADD    =
 
 EXEC    = giraffe
 
-CFLAGS  = -std=c++17 -Wall -fPIC -I../voro++-0.4.6/src $(CADD)
+CFLAGS  = -std=c++17 -Wall -fPIC -fext-numeric-literals -lquadmath -I../voro++-0.4.6/src $(CADD) 
 
 SDIR	= src
 ODIR	= src/obj

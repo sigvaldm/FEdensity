@@ -56,4 +56,26 @@ bool fexist(const std::string& filename){
 	return stat(filename.c_str(), &buf) != -1;
 }
 
+void Progress::update(){
+
+	unsigned int oldPos = pos_;
+	pos_ = progress_*width_/end_;
+
+	unsigned int oldFrac = frac_;
+	frac_ = progress_*100/end_;
+
+	if(pos_!=oldPos || (frac_!= oldFrac && percentage_)){
+
+		out_ << "\r" << label_ << " [";
+		out_ << std::string(pos_, '=');
+		out_ << std::string(width_-pos_, ' ');
+		out_ << "]";
+		if(percentage_){
+			out_ << " " << frac_ << "%";
+		}
+	}
+	if(progress_>=end_) out_ << "\n";
+	out_.flush();
+}
+
 } // namespace gfe

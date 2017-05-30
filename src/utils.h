@@ -30,6 +30,77 @@
 
 namespace gfe {
 
+
+// Size is size of label + width + 3 and, if percentage, + 5
+class Progress {
+public:
+	Progress(std::ostream& out, std::string label,
+		unsigned int end, unsigned int width, bool percentage=false) :
+		out_(out), label_(label), pos_(1), progress_(0), end_(end),
+		width_(width), percentage_(percentage){ update(); };
+
+	Progress& operator++(){
+		++progress_;
+		update();
+		return *this;
+	}
+
+	Progress operator++(int){
+		Progress other(*this);
+		operator++();
+		return other;
+	}
+
+	Progress& operator--(){
+		--progress_;
+		update();
+		return *this;
+	}
+
+	Progress operator--(int){
+		Progress other(*this);
+		operator--();
+		return other;
+	}
+
+	Progress& operator+=(unsigned int x){
+		progress_ += x;
+		update();
+		return *this;
+	}
+
+	Progress& operator-=(unsigned int x){
+		progress_ -= x;
+		update();
+		return *this;
+	}
+
+	Progress& operator=(unsigned int x){
+		progress_ = x;
+		update();
+		return *this;
+	}
+
+private:
+	std::ostream& out_;
+	std::string label_;
+	unsigned int pos_;
+	unsigned int progress_;
+	unsigned int end_;
+	unsigned int width_;
+	unsigned int frac_;
+	bool percentage_;
+
+	void update();
+};
+
+inline std::string pad(std::string in, size_t size){
+	std::string out(in, 0, size);
+	size_t fill = size > out.size() ? size - out.size() : 0;
+	out += std::string(fill, ' ');
+	return out;
+}
+
 template <typename T>
 std::ostream& output(std::ostream& out, const GraphNode<T>& node, std::string acc=""){
 

@@ -39,27 +39,31 @@ def execVoropp(fInName, lower, upper):
 
 def execGiraffe(fInName, fOutName):
     cmd = os.path.join(os.path.dirname(os.path.realpath(__file__)),"../giraffe")
-    cmd += " " + fInName + " " + fOutName
+    cmd += " -xwo " + fOutName + " " + fInName
     devnull = open(os.devnull, 'w')
     sp.call(cmd, shell=True, stdout=devnull)
 
-def readVolume(fInName):
-    with open(fInName, 'r') as fIn:
-        return np.array([float.fromhex(line.split()[-1]) for line in fIn])
+def readVolume(fInName, hexadecimal=True):
+    if hexadecimal:
+        with open(fInName, 'r') as fIn:
+            return np.array([float.fromhex(line.split()[-1]) for line in fIn])
+    else:
+        with open(fInName, 'r') as fIn:
+            return np.array([float(line.split()[-1]) for line in fIn])
 
 def eq(a, b, tol):
     return all(np.abs(np.array(a)-np.array(b))<tol)
 
-def generateMesh(fName, sz, cached=True):
+def generateMesh(fName, sz, cached=True, dims=3):
     pathOfThisFile = os.path.dirname(os.path.realpath(__file__))
     cachePath = os.path.join(pathOfThisFile, "cache")
 
-    fOutName = os.path.join(cachePath, "%e.msh"%sz)
+    fOutName = os.path.join(cachePath, "%d_%e.msh"%(dims,sz))
 
     if (not os.path.isfile(fOutName)) or cached==False:
         cmd = "gmsh -setnumber sz %e"%sz
         cmd += " -o %s"%fOutName
-        cmd += " -3 %s"%os.path.join(pathOfThisFile, fName)
+        cmd += " -%d %s"%(dims,os.path.join(pathOfThisFile, fName))
         sp.call(cmd, shell=True)
 
     return fOutName

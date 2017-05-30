@@ -36,6 +36,10 @@
 
 #include <cassert>
 
+// #include <boost/multiprecision/float128.hpp>
+// #define double boost::multiprecision::float128
+// #define double long double
+
 namespace poly {
 
 /// Maximum number of geometric dimensions.

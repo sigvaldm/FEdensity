@@ -39,6 +39,7 @@ using std::istringstream;
 using std::vector;
 using poly::Point;
 
+#include <cstdio>
 using std::cout;
 using std::cerr;
 
@@ -83,7 +84,7 @@ std::istream& readGmsh(std::istream& in, Mesh &mesh){
     int dim = 2; // changes to 3 upon detection of tetrahedron
 
     int type, nTags, garbage;
-    int v1, v2, v3, v4;
+    size_t v1, v2, v3, v4;
     // int ctr=0;
     for(int i=0; i<nCells; ++i){
 
@@ -169,7 +170,7 @@ std::istream& readFE(std::istream& in, Mesh &mesh){
     vector<vector<int>> belongsTo;
     if(!neighbors) belongsTo.resize(nNodes);
 
-    int v1, v2, v3, v4;
+    size_t v1, v2, v3, v4;
     for(int i=0; i<nCells; i++){
 
         Cell cell;
@@ -220,11 +221,11 @@ void Mesh::findNeighbors(const std::vector<std::vector<int>>& belongsTo){
         for(size_t i=0; i<dim+1; ++i){
 
             // facet opposite of vertex i
-            int j = (i+1)%(dim+1);
-            int k = (i+2)%(dim+1);
+            size_t j = (i+1)%(dim+1);
+            size_t k = (i+2)%(dim+1);
 
-            int vj = cell.vertices[j];
-            int vk = cell.vertices[k];
+            size_t vj = cell.vertices[j];
+            size_t vk = cell.vertices[k];
 
             vector<int> candidates = belongsTo[vj];
 
@@ -246,7 +247,7 @@ void Mesh::findNeighbors(const std::vector<std::vector<int>>& belongsTo){
 
             if(dim==3){
                 int l = (i+3)%(dim+1);
-                int vl = cell.vertices[l];
+                size_t vl = cell.vertices[l];
 
                 // Remove candidates not containing vl
                 for(auto it = candidates.begin(); it != candidates.end();){
@@ -275,7 +276,20 @@ void Mesh::findNeighbors(const std::vector<std::vector<int>>& belongsTo){
 
 std::ostream& writeVector(std::ostream& out, const vector<double>& vec){
     for(const auto& elem : vec){
+		// Original
         out << elem << "\n";
+
+        // For long doubles hexadecimal this is necessary
+        // const size_t n = 100;
+        // char buffer[n];
+        // snprintf(buffer, n, "%La\n", elem);
+        // out << buffer;
+
+        // For boost multiprecisiong
+        // out.precision(std::numeric_limits<double>::max_digits10);  // Show all potentially meaningful digits.
+        // out.setf(std::ios::showpoint); // Show all significant trailing zeros.
+        // out << elem << "\n";
+
     }
     return out;
 }

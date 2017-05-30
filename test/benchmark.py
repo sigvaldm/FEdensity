@@ -10,18 +10,25 @@ def func(x, alog, alin, b):
 
 epsilon = 1e-14
 
-sizes = 0.1*np.array([(1./i)**(1./3.) for i in range(1,2)])
+dims = 3
+
+if dims==3:
+	sizes = 0.1*np.array([(1./i)**(1./3.) for i in range(1,2)])
+else:
+	sizes = [0.005]
 
 # sizes = [0.3, 0.2, 0.1, 0.03, 0.04, 0.045, 0.048, 0.049, 0.0495, 0.05]
 nNodes = []
 timeVoropp = []
 timeGiraffe = []
 
+giraffeall = False
+
 for sz in sizes:
 
     print(sz)
 
-    fname = generateMesh("../mesh/basic.geo",sz)
+    fname = generateMesh("../mesh/basic%dD.geo"%dims,sz,dims=dims)
     lower, upper = gmshToVoro(fname,"voro.txt")
 
     if(upper[2]-lower[2]<epsilon):
@@ -49,7 +56,10 @@ for sz in sizes:
     t = 1000.0*(t1-t0)
     print("Giraffe executed in %7.2f ms"%t)
     timeGiraffe.append(t)
-    volGiraffe = readVolume("giraffe.txt")
+    if giraffeall:
+        volGiraffe = readVolume("giraffeall.txt", False)
+    else:
+        volGiraffe = readVolume("giraffe.txt")
 
     # maxnorm = np.max(np.abs(volVoropp-volGiraffe)/volVoropp)
     # print("Maximum deviation: %5.2f%%"%(100*maxnorm))
@@ -61,11 +71,12 @@ for sz in sizes:
 
     avgerror = np.average(np.abs(volVoropp-volGiraffe)/volVoropp)
 
-    print("Average discrepancy: %.3f%% "%(avgerror*100))
+    print("Average discrepancy: %.10f%% "%(avgerror*100))
     print("Average cell volume: %11e"%(np.average(volVoropp)))
 
     a = np.sum(volVoropp)
     b = np.sum(volGiraffe)
+    print("Voro++ vs GirafFE")
     print("Total volume: %20.18e vs %20.18e"%(a, b))
 
     nNodes.append(len(volVoropp))
@@ -86,11 +97,11 @@ for sz in sizes:
 # else:
 #     print('Giraffe is O(n*log n)')
 
-plt.plot(nNodes, timeVoropp, 'o', label='Voro++')
-plt.plot(nNodes, timeGiraffe, 's', label='GirafFE')
-plt.grid()
-plt.xlabel('Number of nodes')
-plt.ylabel('Execution time [ms]')
-plt.title('Computation of Voronoi volumes')
-plt.legend(loc='upper left')
-plt.show()
+# plt.plot(nNodes, timeVoropp, 'o', label='Voro++')
+# plt.plot(nNodes, timeGiraffe, 's', label='GirafFE')
+# plt.grid()
+# plt.xlabel('Number of nodes')
+# plt.ylabel('Execution time [ms]')
+# plt.title('Computation of Voronoi volumes')
+# plt.legend(loc='upper left')
+# plt.show()

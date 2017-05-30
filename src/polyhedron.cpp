@@ -36,6 +36,8 @@ namespace poly {
 
 using std::vector;
 using std::array;
+using std::abs;
+using std::sqrt;
 
 /******************************************************************************
  * LOCAL FUNCTION DECLARATIONS
@@ -99,7 +101,7 @@ Point::Point(double x){
 double Point::length() const{
     double l = 0;
     for(const auto& c : *this) l += c*c;
-    return std::sqrt(l);
+    return sqrt(l);
 }
 
 /******************************************************************************
@@ -306,7 +308,7 @@ double Polyhedron::volume() const{
                 Point c = *it;
                 Point d = *(it+1);
                 Point temp = cross(b-d, c-d);
-                volume += std::abs(dot(a-d, temp));
+                volume += abs(dot(a-d, temp));
             }
         // }
     }
